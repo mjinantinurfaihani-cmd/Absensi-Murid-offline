@@ -21,6 +21,7 @@
     "dexie": "latest",
     "express": "^5.2.1",
     "file-saver": "latest",
+    "firebase": "^12.18.0",
     "jspdf": "^4.2.1",
     "jszip": "latest",
     "mkcert": "^3.2.0",
