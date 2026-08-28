@@ -500,6 +500,7 @@ function Students({user,showToast}:any){const[list,setList]=useState<Student[]>(
       } else {
         a = await db.students.filter(s=>!s.deleted).toArray();
       }
+      a = a.filter(s=>!s.deleted);
       if(assignedClasses) a = a.filter(s=>assignedClasses.includes(s.kelas));
       setList(a.sort((a,b)=>a.nama.localeCompare(b.nama)));
     }catch(e){
