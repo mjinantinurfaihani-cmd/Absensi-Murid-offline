@@ -19,7 +19,7 @@ async function initialize() {
 		console.warn('Firebase publik tidak tersedia; memakai data lokal', error);
 	}
 	await initSqlStore();
-	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=6',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
+	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=7',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
 	createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 }
 
