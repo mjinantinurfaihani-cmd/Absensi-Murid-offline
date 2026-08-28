@@ -1,7 +1,8 @@
 import React from'react';import{createRoot}from'react-dom/client';import App from'./App';import'./style.css';
 import { db, seed } from './db';
 import { initSqlStore } from './sqlStore';
-import { loadPublicData, publishInitialData } from './firebaseStore';
+import { applyCloudData, loadPublicData, publishInitialData, subscribePublicData } from './firebaseStore';
+import type { Student, Teacher } from './types';
 
 async function initialize() {
 	await seed();
@@ -10,8 +11,10 @@ async function initialize() {
 		const localTeachers = await db.teachers.toArray();
 		const cloud = await loadPublicData();
 		if (cloud.students.length || cloud.teachers.length) {
-			await db.students.bulkPut(cloud.students.filter(student => !student.deleted));
-			await db.teachers.bulkPut(cloud.teachers.filter(teacher => !teacher.deleted));
+			await applyCloudData(async () => {
+				await db.students.bulkPut(cloud.students.filter(student => !student.deleted));
+				await db.teachers.bulkPut(cloud.teachers.filter(teacher => !teacher.deleted));
+			});
 		} else {
 			await publishInitialData(localStudents, localTeachers);
 		}
@@ -19,6 +22,15 @@ async function initialize() {
 		console.warn('Firebase publik tidak tersedia; memakai data lokal', error);
 	}
 	await initSqlStore();
+	let initialSnapshots = 0;
+	subscribePublicData((kind, data) => {
+		void applyCloudData(async () => {
+			if (kind === 'students') await db.students.bulkPut((data as Student[]).filter(student => !student.deleted));
+			else await db.teachers.bulkPut((data as Teacher[]).filter(teacher => !teacher.deleted));
+			if (initialSnapshots < 2) initialSnapshots += 1;
+			else window.location.reload();
+		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
+	});
 	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=7',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
 	createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 }

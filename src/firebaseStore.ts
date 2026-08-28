@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, setDoc } from 'firebase/firestore';
 import type { Student, Teacher } from './types';
 
 const app = initializeApp({
@@ -13,6 +13,20 @@ const app = initializeApp({
 });
 
 const firestore = getFirestore(app);
+let applyingCloudData = false;
+
+export function isApplyingCloudData() {
+  return applyingCloudData;
+}
+
+export async function applyCloudData<T>(operation: () => Promise<T>) {
+  applyingCloudData = true;
+  try {
+    return await operation();
+  } finally {
+    applyingCloudData = false;
+  }
+}
 
 export async function loadPublicData() {
   const [studentSnapshot, teacherSnapshot] = await Promise.all([
@@ -46,4 +60,17 @@ export async function publishInitialData(students: Student[], teachers: Teacher[
     ...students.map(publishStudent),
     ...teachers.map(publishTeacher)
   ]);
+}
+
+export function subscribePublicData(onData: (kind: 'students' | 'teachers', data: (Student | Teacher)[]) => void) {
+  const unsubscribeStudents = onSnapshot(collection(firestore, 'students'), snapshot => {
+    onData('students', snapshot.docs.map(item => item.data() as Student));
+  });
+  const unsubscribeTeachers = onSnapshot(collection(firestore, 'teachers'), snapshot => {
+    onData('teachers', snapshot.docs.map(item => item.data() as Teacher));
+  });
+  return () => {
+    unsubscribeStudents();
+    unsubscribeTeachers();
+  };
 }
