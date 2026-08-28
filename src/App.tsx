@@ -1,6 +1,7 @@
 import{useEffect,useMemo,useRef,useState}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify}from'./notify';import{confirmAttendanceConflict,syncAll}from'./sync';import{downloadTemplate,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
 import SqlConsole from './components/SqlConsole';
 import InfobipMetrics from './components/InfobipMetrics';
+import{loadPublicData,publishInitialData}from'./firebaseStore';
 import BackupControls from './components/BackupControls';
 import{exportAttendanceReport}from'./excel';
 import{sendAttendanceInfobip}from'./infobip';
@@ -138,7 +139,7 @@ function Shell({user,logout,toast,showToast,closeToast,conflictDebugEnabled,setC
     user={user}
     showToast={showToast}
   />
-)} {page==='pengaturan'&&<Settings showToast={showToast}/>}</main>{toast&&<AnimatedToast toast={toast} onClose={closeToast}/>}</>}
+)} {page==='pengaturan'&&user.role==='admin'&&<Settings showToast={showToast}/>}</main>{toast&&<AnimatedToast toast={toast} onClose={closeToast}/>}</>}
 function Scanner({onScan}:{onScan:(s:string)=>void}){
   type PermissionStateEx='granted'|'denied'|'prompt'|'unsupported'|'insecure';
   const videoRef=useRef<HTMLVideoElement>(null);
