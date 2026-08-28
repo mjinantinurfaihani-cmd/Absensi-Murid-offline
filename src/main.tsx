@@ -4,13 +4,16 @@ import { initSqlStore } from './sqlStore';
 import { applyCloudData, loadPublicData, publishInitialData, subscribePublicData } from './firebaseStore';
 import type { Student, Teacher } from './types';
 
-async function replacePublicTable<T extends { id: string; deleted?: boolean | number }>(table: any, rows: T[]) {
-	const activeRows = rows.filter(row => !row.deleted);
-	const activeIds = new Set(activeRows.map(row => row.id));
-	const localRows = await table.toArray() as T[];
-	await table.bulkPut(activeRows);
-	const staleIds = localRows.filter(row => !activeIds.has(row.id)).map(row => row.id);
-	if (staleIds.length) await table.bulkDelete(staleIds);
+async function replacePublicTable<T extends { id: string; deleted?: boolean | number; updatedAt?: string; nisn?: string; nik?: string }>(table: any, rows: T[]) {
+	const byKey = new Map<string, T>();
+	for (const row of rows) {
+		if (row.deleted) continue;
+		const key = row.nisn || row.nik || row.id;
+		const current = byKey.get(key);
+		if (!current || String(row.updatedAt || '') >= String(current.updatedAt || '')) byKey.set(key, row);
+	}
+	await table.clear();
+	await table.bulkPut([...byKey.values()]);
 }
 
 async function initialize() {
@@ -40,7 +43,7 @@ async function initialize() {
 			else window.location.reload();
 		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
 	});
-	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=8',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
+	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=9',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
 	createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 }
 

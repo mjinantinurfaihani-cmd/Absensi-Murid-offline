@@ -63,12 +63,13 @@ export async function publishInitialData(students: Student[], teachers: Teacher[
 }
 
 export function subscribePublicData(onData: (kind: 'students' | 'teachers', data: (Student | Teacher)[]) => void) {
+  const onError = (error: Error) => console.warn('Firestore realtime tidak tersedia', { code: (error as Error & { code?: string }).code, message: error.message });
   const unsubscribeStudents = onSnapshot(collection(firestore, 'students'), snapshot => {
     onData('students', snapshot.docs.map(item => item.data() as Student));
-  });
+  }, onError);
   const unsubscribeTeachers = onSnapshot(collection(firestore, 'teachers'), snapshot => {
     onData('teachers', snapshot.docs.map(item => item.data() as Teacher));
-  });
+  }, onError);
   return () => {
     unsubscribeStudents();
     unsubscribeTeachers();
