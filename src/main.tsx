@@ -21,13 +21,11 @@ async function initialize() {
 	await initSqlStore();
 	createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 	void hydratePublicData();
-	let initialSnapshots = 0;
 	subscribePublicData((kind, data) => {
 		void applyCloudData(async () => {
 			if (kind === 'students') await replacePublicTable(db.students, data as Student[]);
 			else await replacePublicTable(db.teachers, data as Teacher[]);
-			if (initialSnapshots < 2) initialSnapshots += 1;
-			else window.location.reload();
+			window.dispatchEvent(new CustomEvent('public-data-updated', { detail: kind }));
 		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
 	});
 	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=11',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
