@@ -21,7 +21,10 @@ async function initialize() {
 	try {
 		const localStudents = await db.students.toArray();
 		const localTeachers = await db.teachers.toArray();
-		const cloud = await loadPublicData();
+		const cloud = await Promise.race([
+			loadPublicData(),
+			new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Timeout memuat data Firebase')), 8000))
+		]);
 		if (cloud.students.length || cloud.teachers.length) {
 			await applyCloudData(async () => {
 				await replacePublicTable(db.students, cloud.students);
@@ -43,7 +46,7 @@ async function initialize() {
 			else window.location.reload();
 		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
 	});
-	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=9',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
+	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=10',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
 	createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 }
 
