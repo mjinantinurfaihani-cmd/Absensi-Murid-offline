@@ -492,15 +492,7 @@ function Scan({user,showToast}:any){
 
 function Students({user,showToast}:any){const[list,setList]=useState<Student[]>([]);const[query,setQuery]=useState('');const[kelas,setKelas]=useState('ALL');const[page,setPage]=useState(1);const[edit,setEdit]=useState<Partial<Student>>({kelas:user.role==='guru'?user.kelas:'4A'});const[open,setOpen]=useState(false);const pageSize=10;const assignedClasses=user.role==='admin'?null:user.kelas.split(',').map((value:string)=>value.trim()).filter(Boolean);const classes=[...new Set([...list.map(s=>s.kelas),edit.kelas||'4A'])].filter(value=>!assignedClasses||assignedClasses.includes(value)).sort();async function load(){
     try{
-      // prefer SQL-backed list when available for faster SQL-like queries
-      const sql = await getStudentsFromSql().catch(()=>null);
-      let a: Student[] = [];
-      if(Array.isArray(sql) && sql.length){
-        a = sql as Student[];
-      } else {
-        a = await db.students.filter(s=>!s.deleted).toArray();
-      }
-      a = a.filter(s=>!s.deleted);
+      let a = await db.students.filter(s=>!s.deleted).toArray();
       if(assignedClasses) a = a.filter(s=>assignedClasses.includes(s.kelas));
       setList(a.sort((a,b)=>a.nama.localeCompare(b.nama)));
     }catch(e){
