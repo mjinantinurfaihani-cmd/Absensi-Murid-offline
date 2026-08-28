@@ -498,7 +498,8 @@ function Students({user,showToast}:any){const[list,setList]=useState<Student[]>(
       setList(a.sort((a,b)=>a.nama.localeCompare(b.nama)));
     }catch(e){
       console.warn('Failed to load students from SQL store, falling back to IndexedDB', e);
-      const a = await db.students.filter(s=>!s.deleted).toArray();
+      let a = await db.students.filter(s=>!s.deleted).toArray();
+      if(assignedClasses) a = a.filter(s=>assignedClasses.includes(s.kelas));
       setList(a.sort((a,b)=>a.nama.localeCompare(b.nama)));
     }
   }
