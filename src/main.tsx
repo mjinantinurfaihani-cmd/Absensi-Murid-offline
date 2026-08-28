@@ -28,7 +28,7 @@ async function initialize() {
 			window.dispatchEvent(new CustomEvent('public-data-updated', { detail: kind }));
 		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
 	});
-	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=13',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
+	if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=14',{updateViaCache:'none'}).catch(error=>{if(import.meta.env.DEV)console.warn('Service Worker tidak dapat didaftarkan:',error)}));
 }
 
 async function hydratePublicData() {

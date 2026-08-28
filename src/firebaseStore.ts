@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
 import type { Student, Teacher } from './types';
 
 const app = initializeApp({
@@ -63,15 +63,23 @@ export async function publishInitialData(students: Student[], teachers: Teacher[
 }
 
 export function subscribePublicData(onData: (kind: 'students' | 'teachers', data: (Student | Teacher)[]) => void) {
-  const onError = (error: Error) => console.warn('Firestore realtime tidak tersedia', { code: (error as Error & { code?: string }).code, message: error.message });
-  const unsubscribeStudents = onSnapshot(collection(firestore, 'students'), snapshot => {
-    onData('students', snapshot.docs.map(item => item.data() as Student));
-  }, onError);
-  const unsubscribeTeachers = onSnapshot(collection(firestore, 'teachers'), snapshot => {
-    onData('teachers', snapshot.docs.map(item => item.data() as Teacher));
-  }, onError);
+  let stopped = false;
+  let timer: number | undefined;
+  const poll = async () => {
+    if (stopped || !navigator.onLine || document.visibilityState === 'hidden') return;
+    try {
+      const data = await loadPublicData();
+      onData('students', data.students);
+      onData('teachers', data.teachers);
+    } catch (error) {
+      const details = error as Error & { code?: string };
+      console.warn('Sinkronisasi Firebase ditunda', { code: details.code, message: details.message });
+      if (details.code === 'resource-exhausted') stopped = true;
+    }
+  };
+  timer = window.setInterval(() => void poll(), 300000);
   return () => {
-    unsubscribeStudents();
-    unsubscribeTeachers();
+    stopped = true;
+    if (timer !== undefined) window.clearInterval(timer);
   };
 }
