@@ -91,6 +91,12 @@ npm run build
 npm run preview
 ```
 
+## Deploy Firebase dari GitHub
+
+Project Firebase yang digunakan adalah `absensi-murid-268`. Workflow GitHub Actions di `.github/workflows/firebase-hosting.yml` akan menjalankan build dan deploy ke Hosting setiap push ke branch `main`.
+
+Tambahkan service account JSON Firebase sebagai repository secret dengan nama `FIREBASE_SERVICE_ACCOUNT_ABSENSI_MURID_268`. Setelah secret tersedia, push ke `main` akan memicu deploy otomatis.
+
 ## Server mandiri opsional
 
 Terminal kedua:
@@ -170,7 +176,7 @@ npm run build
 npm run start:https
 ```
 
-Buka `https://localhost:8443`. Server juga menampilkan alamat HTTPS LAN. Sertifikat lokal dibuat otomatis di `server/certs`. Browser mungkin meminta persetujuan pada akses pertama. Untuk kamera Android yang paling andal, gunakan domain publik dengan sertifikat resmi atau pasang sertifikat lokal sebagai tepercaya pada perangkat.
+Buka `https://127.0.0.1:9005`. Server juga menampilkan alamat HTTPS LAN. Sertifikat lokal dibuat otomatis di `server/certs`. Browser mungkin meminta persetujuan pada akses pertama. Untuk kamera Android yang paling andal, gunakan domain publik dengan sertifikat resmi atau pasang sertifikat lokal sebagai tepercaya pada perangkat.
 
 ### Hosting publik
 

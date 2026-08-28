@@ -5,7 +5,7 @@ import os from 'node:os';
 import express from 'express';
 import selfsigned from 'selfsigned';
 
-const PORT = Number(process.env.PORT || 8443);
+const PORT = Number(process.env.PORT || 9005);
 const HOST = process.env.HOST || '127.0.0.1';
 const root = path.resolve('.');
 const dist = path.join(root, 'dist');
