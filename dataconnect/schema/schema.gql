@@ -1,0 +1,32 @@
+type SchoolClass @table {
+  className: String!
+  academicYear: String!
+  teacherName: String
+}
+
+type Student @table {
+  fullName: String!
+  nis: String!
+  parentContact: String
+  dateOfBirth: Date
+  schoolClass: SchoolClass!
+}
+
+type AttendanceRecord @table {
+  date: Date!
+  status: String!
+  remarks: String
+  student: Student!
+}
+
+type AttendanceSession @table {
+  sessionDate: Timestamp!
+  status: String!
+  schoolClass: SchoolClass!
+}
+
+type User @table {
+  email: String!
+  role: String!
+  lastLogin: Timestamp
+}

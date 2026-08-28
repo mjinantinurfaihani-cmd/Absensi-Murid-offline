@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  absensi-app:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npm run build && npm run start:https"
+    ports:
+      - "8443:8443"
+    environment:
+      # Infobip: choose either API key (INFOBIP_API_KEY) OR OAuth client credentials
+      - INFOBIP_API_KEY=
+      - INFOBIP_CLIENT_ID=
+      - INFOBIP_CLIENT_SECRET=
+      - INFOBIP_OAUTH_TOKEN_URL=
+      - INFOBIP_WHATSAPP_FROM=
+      - INFOBIP_TEMPLATE_HADIR=
+      - INFOBIP_TEMPLATE_PULANG=
+      - INFOBIP_TEMPLATE_LANGUAGE=id
+      - INFOBIP_BASE_URL=8vyr2e.api.infobip.com
+      - INFOBIP_NOTIFY_URL=
+      - INFOBIP_WEBHOOK_SECRET=
+    restart: unless-stopped

@@ -1,0 +1,139 @@
+mutation CreateAttendanceRecord($data: AttendanceRecord_Data!) @auth(level: USER) {
+  attendanceRecord_insert(data: $data)
+}
+
+mutation UpsertAttendanceRecord($data: AttendanceRecord_Data!) @auth(level: USER) {
+  attendanceRecord_upsert(data: $data)
+}
+
+mutation DeleteAttendanceRecord($id: UUID!) @auth(level: USER) {
+  attendanceRecord_delete(id: $id)
+}
+
+mutation UpdateAttendanceRecord($id: UUID!, $data: AttendanceRecord_Data!) @auth(level: USER) {
+  attendanceRecord_update(id: $id, data: $data)
+}
+
+query GetAttendanceRecord($id: UUID!) @auth(level: USER) {
+  attendanceRecord(id: $id) {
+    date status remarks student { fullName }
+  }
+}
+
+query ListAttendanceRecords @auth(level: USER) {
+  attendanceRecords {
+    date status remarks
+  }
+}
+
+mutation CreateAttendanceSession($data: AttendanceSession_Data!) @auth(level: USER) {
+  attendanceSession_insert(data: $data)
+}
+
+mutation UpsertAttendanceSession($data: AttendanceSession_Data!) @auth(level: USER) {
+  attendanceSession_upsert(data: $data)
+}
+
+mutation DeleteAttendanceSession($id: UUID!) @auth(level: USER) {
+  attendanceSession_delete(id: $id)
+}
+
+mutation UpdateAttendanceSession($id: UUID!, $data: AttendanceSession_Data!) @auth(level: USER) {
+  attendanceSession_update(id: $id, data: $data)
+}
+
+query GetAttendanceSession($id: UUID!) @auth(level: USER) {
+  attendanceSession(id: $id) {
+    sessionDate status
+  }
+}
+
+query ListAttendanceSessions @auth(level: USER) {
+  attendanceSessions {
+    sessionDate status
+  }
+}
+
+mutation CreateSchoolClass($data: SchoolClass_Data!) @auth(level: USER) {
+  schoolClass_insert(data: $data)
+}
+
+mutation UpsertSchoolClass($data: SchoolClass_Data!) @auth(level: USER) {
+  schoolClass_upsert(data: $data)
+}
+
+mutation DeleteSchoolClass($id: UUID!) @auth(level: USER) {
+  schoolClass_delete(id: $id)
+}
+
+mutation UpdateSchoolClass($id: UUID!, $data: SchoolClass_Data!) @auth(level: USER) {
+  schoolClass_update(id: $id, data: $data)
+}
+
+query GetSchoolClass($id: UUID!) @auth(level: PUBLIC, insecureReason: "Publicly accessible class information.") {
+  schoolClass(id: $id) {
+    className academicYear teacherName
+  }
+}
+
+query ListSchoolClasses @auth(level: PUBLIC, insecureReason: "Publicly accessible class information.") {
+  schoolClasses {
+    className academicYear teacherName
+  }
+}
+
+mutation CreateStudent($data: Student_Data!) @auth(level: USER) {
+  student_insert(data: $data)
+}
+
+mutation UpsertStudent($data: Student_Data!) @auth(level: USER) {
+  student_upsert(data: $data)
+}
+
+mutation DeleteStudent($id: UUID!) @auth(level: USER) {
+  student_delete(id: $id)
+}
+
+mutation UpdateStudent($id: UUID!, $data: Student_Data!) @auth(level: USER) {
+  student_update(id: $id, data: $data)
+}
+
+query GetStudent($id: UUID!) @auth(level: USER) {
+  student(id: $id) {
+    fullName nis parentContact dateOfBirth
+  }
+}
+
+query ListStudents @auth(level: USER) {
+  students {
+    fullName nis
+  }
+}
+
+mutation CreateUser($data: User_Data!) @auth(level: USER) {
+  user_insert(data: $data)
+}
+
+mutation UpsertUser($data: User_Data!) @auth(level: USER) {
+  user_upsert(data: $data)
+}
+
+mutation DeleteUser($id: UUID!) @auth(level: USER) {
+  user_delete(id: $id)
+}
+
+mutation UpdateUser($id: UUID!, $data: User_Data!) @auth(level: USER) {
+  user_update(id: $id, data: $data)
+}
+
+query GetCurrentUser @auth(level: USER) {
+  user(key: {id_expr: "auth.uid"}) {
+    email role lastLogin
+  }
+}
+
+query ListUsers @auth(level: USER) {
+  users {
+    email role
+  }
+}

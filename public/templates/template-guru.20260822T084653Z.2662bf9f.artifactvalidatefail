@@ -1,0 +1,36 @@
+{
+  "tool": "artifact-validator",
+  "schemaVersion": "2.0",
+  "validatorVersion": "3.1.0",
+  "result": "invalid",
+  "exitCode": 2,
+  "input": {
+    "path": "/mnt/data/absensi-siswa-offline/public/templates/template-guru.xlsx",
+    "sha256": "f9bc3979e9f42bf2ddf68faa455cd199e2a6a41f66139e37de991838f525f792",
+    "sizeBytes": 9930,
+    "kind": "xlsx"
+  },
+  "output": null,
+  "backup": null,
+  "repair": null,
+  "packageError": null,
+  "summary": {
+    "errorCount": 1,
+    "warningCount": 0,
+    "repairableCount": 0,
+    "issueCount": 1
+  },
+  "issues": [
+    {
+      "code": "XLSX_ELEMENT_ORDER_INVALID",
+      "category": "schema",
+      "severity": "error",
+      "part": "/xl/styles.xml",
+      "xpath": null,
+      "message": "A stylesheet font contains child elements in schema-invalid order.",
+      "repairable": false,
+      "suggestedFix": "Repair the SpreadsheetML element order. 1. Locate the reported worksheet, chart, or styles part. 2. Re-serialize the affected XML with schema-valid child order while preserving values and relationship IDs. 3. Re-run validation and confirm the ordering error is cleared.",
+      "fixMode": null
+    }
+  ]
+}

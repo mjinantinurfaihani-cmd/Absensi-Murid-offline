@@ -1,0 +1,27 @@
+mutation SeedDatabase @transaction {
+  schoolClass_insertMany(data: [
+    { className: "Class A", academicYear: "2023/2024", teacherName: "Mr. Smith" },
+    { className: "Class B", academicYear: "2023/2024", teacherName: "Ms. Jones" },
+    { className: "Class C", academicYear: "2024/2025", teacherName: "Dr. Brown" }
+  ])
+  student_insertMany(data: [
+    { fullName: "Alice Johnson", nis: "STU001", parentContact: "555-0101", schoolClass: { id: "00000000-0000-0000-0000-000000000001" } },
+    { fullName: "Bob Miller", nis: "STU002", parentContact: "555-0102", schoolClass: { id: "00000000-0000-0000-0000-000000000001" } },
+    { fullName: "Charlie Davis", nis: "STU003", parentContact: "555-0103", schoolClass: { id: "00000000-0000-0000-0000-000000000002" } },
+    { fullName: "Diana Prince", nis: "STU004", parentContact: "555-0104", schoolClass: { id: "00000000-0000-0000-0000-000000000003" } }
+  ])
+  attendanceRecord_insertMany(data: [
+    { date: "2023-09-01", status: "Present", student: { id: "00000000-0000-0000-0000-000000000001" } },
+    { date: "2023-09-01", status: "Absent", student: { id: "00000000-0000-0000-0000-000000000002" } },
+    { date: "2023-09-01", status: "Present", student: { id: "00000000-0000-0000-0000-000000000003" } }
+  ])
+  attendanceSession_insertMany(data: [
+    { sessionDate: "2023-09-01T08:00:00Z", status: "Active", schoolClass: { id: "00000000-0000-0000-0000-000000000001" } },
+    { sessionDate: "2023-09-02T09:00:00Z", status: "Completed", schoolClass: { id: "00000000-0000-0000-0000-000000000002" } }
+  ])
+  user_insertMany(data: [
+    { email: "admin@school.edu", role: "Admin" },
+    { email: "teacher1@school.edu", role: "Teacher" },
+    { email: "staff@school.edu", role: "Staff" }
+  ])
+}
