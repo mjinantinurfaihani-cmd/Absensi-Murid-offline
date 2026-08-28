@@ -179,3 +179,4 @@ Konfigurasi `vercel.json`, `netlify.toml`, dan `public/_headers` sudah disertaka
 ## Perbaikan TypeScript
 
 Versi ini memperbaiki tipe riwayat scan, deklarasi CSS Vite, nilai awal timer toast, dan deklarasi lokal ZXing. Jika proyek lama pernah menjalankan instalasi yang terputus, hapus `node_modules` dan `package-lock.json`, lalu jalankan `npm install` kembali sebelum `npm run start:https`.
+"# Absensi-Murid-offline" 
