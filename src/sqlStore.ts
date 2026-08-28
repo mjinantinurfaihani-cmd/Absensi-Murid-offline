@@ -91,7 +91,7 @@ async function insertOrReplaceTeacher(t: Teacher) {
   const a = await ensureAlasql();
   try { a('DELETE FROM teachers WHERE id = ?', [t.id]); } catch (e) {}
   try {
-    a('INSERT INTO teachers VALUES(?,?,?,?,?,?,?,?,?)', [t.id, t.nama, t.nik||'', t.password||'', t.role||'', t.kelas||'', t.deviceId||'', Boolean(t.deleted), Number(t.synced||0), t.updatedAt||new Date().toISOString()]);
+    a('INSERT INTO teachers VALUES(?,?,?,?,?,?,?,?,?,?)', [t.id, t.nama, t.nik||'', t.password||'', t.role||'', t.kelas||'', t.deviceId||'', Boolean(t.deleted), Number(t.synced||0), t.updatedAt||new Date().toISOString()]);
   } catch (e) { console.warn('SQL insert teacher failed', e); }
 }
 
