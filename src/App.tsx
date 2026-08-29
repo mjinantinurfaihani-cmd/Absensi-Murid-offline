@@ -1,6 +1,6 @@
 function StudentsPage({user,showToast}:any){const[refreshKey,setRefreshKey]=useState(0);return <><StudentList key={refreshKey} user={user} showToast={showToast}/>{user.role==='admin'&&<div className="heading-actions"><button className="danger" onClick={async()=>{await deleteAllStudents(showToast);setRefreshKey(value=>value+1)}}>Hapus Semua Data Siswa</button></div>}</>}
 async function deleteAllStudents(showToast:any){if(!window.confirm('Apakah anda yakin ingin menghapus semua data siswa?'))return;const students=await db.students.filter(student=>!student.deleted).toArray();if(!students.length){showToast('info','Tidak ada data siswa untuk dihapus');return}await db.students.bulkDelete(students.map(student=>student.id));showToast('success','Semua data siswa berhasil dihapus')}
-import{useEffect,useMemo,useRef,useState}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify}from'./notify';import{confirmAttendanceConflict,syncAdminDirectoryData,syncAll}from'./sync';import{downloadTemplate,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
+import{useEffect,useMemo,useRef,useState}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify}from'./notify';import{confirmAttendanceConflict,syncAdminDirectoryData,syncAll}from'./sync';import{downloadTemplate,exportAttendanceSnapshot,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
 import SqlConsole from './components/SqlConsole';
 import InfobipMetrics from './components/InfobipMetrics';
 import{loadPublicData,publishInitialData}from'./firebaseStore';
@@ -344,6 +344,8 @@ function Scan({user,showToast}:any){
   const[mode,setMode]=useState<SoundMode>(()=>(localStorage.getItem('soundMode')as SoundMode)||'VOICE');
   const[autoDate,setAutoDate]=useState(true);
   const[selectedDate,setSelectedDate]=useState(today());
+  const[teacherFilter,setTeacherFilter]=useState('ALL');
+  const[teacherOptions,setTeacherOptions]=useState<Array<{id:string;nama:string;role:string;kelas:string}>>([]);
   const[manualIn,setManualIn]=useState('07:00');
   const[manualOut,setManualOut]=useState('13:00');
   const[busy,setBusy]=useState(false);
@@ -353,7 +355,9 @@ function Scan({user,showToast}:any){
     const activeDate=autoDate?today():selectedDate;
     const all=await db.attendance.where('tanggal').equals(activeDate).toArray();
     const students=await db.students.toArray();
+    const teachers=await db.teachers.filter(student=>!student.deleted).toArray();
     setClassOptions([...new Set(students.filter(student=>!student.deleted).map(student=>student.kelas.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})));
+    setTeacherOptions(teachers.sort((a,b)=>a.nama.localeCompare(b.nama)).map(teacher=>({id:teacher.id,nama:teacher.nama,role:teacher.role,kelas:teacher.kelas})));
     const map=new Map(students.map(student=>[student.id,student]));
     const query=q.trim().toLowerCase();
 
@@ -368,7 +372,7 @@ function Scan({user,showToast}:any){
       }];
     });
 
-    const scoped=history.filter(row=>(user.role==='guru bidang'?(user.kelas.split(',').map((value:string)=>value.trim()).includes(row.kelas)&&(kelas==='ALL'||row.kelas===kelas)):(kelas==='ALL'||row.kelas===kelas))&&(!query||row.nama.toLowerCase().includes(query)||row.nisn.toLowerCase().includes(query)));
+    const scoped=history.filter(row=>(user.role==='guru bidang'?(user.kelas.split(',').map((value:string)=>value.trim()).includes(row.kelas)&&(kelas==='ALL'||row.kelas===kelas)):(kelas==='ALL'||row.kelas===kelas))&&(!query||row.nama.toLowerCase().includes(query)||row.nisn.toLowerCase().includes(query))&& (teacherFilter==='ALL'||row.ownerId===teacherFilter || (user.role !== 'admin' && row.ownerId===user.id)));
     if(user.role==='guru bidang'){
       const grouped=new Map<string,ScanHistoryRow[]>();
       for(const row of scoped){const group=grouped.get(row.studentId)||[];group.push(row);grouped.set(row.studentId,group)}
@@ -376,7 +380,8 @@ function Scan({user,showToast}:any){
     }else setRows((user.role==='admin'?scoped:scoped.filter(row=>ownsAttendance(row,user))).sort((a,b)=>b.jamMasuk.localeCompare(a.jamMasuk)));
   }
 
-  useEffect(()=>{void load()},[kelas,q,autoDate,selectedDate]);
+  useEffect(()=>{if(user.role!=='admin'&&teacherFilter==='ALL'){setTeacherFilter(user.id)}},[user.id,user.role]);
+  useEffect(()=>{void load()},[kelas,q,autoDate,selectedDate,teacherFilter]);
 
   async function scan(text:string){
     if(busy||(last.current.text===text&&Date.now()-last.current.at<3000))return;
@@ -486,6 +491,11 @@ function Scan({user,showToast}:any){
   }
 
   const hadir=rows.filter(row=>row.status==='HADIR').length;
+  const exportScopeDate=autoDate?today():selectedDate;
+  const exportScopeTeacher=teacherOptions.find(item=>item.id===teacherFilter)?.nama||'Semua Guru';
+  const exportScopeClass=(user.role==='guru'?user.kelas.split(',')[0].trim():kelas)==='ALL'?'Semua Kelas':(user.role==='guru'?user.kelas.split(',')[0].trim():kelas);
+
+  async function exportFilteredReport(mode:'date'|'class'|'teacher'){const targetDate=autoDate?today():selectedDate;const currentClass=user.role==='guru'?user.kelas.split(',')[0].trim():kelas;const exportClass=mode==='class'?(currentClass==='ALL'?'ALL':currentClass):currentClass;const exportTeacher=mode==='teacher'?teacherFilter:'ALL';const rowCount=await exportAttendanceSnapshot({date:mode==='date'?targetDate:targetDate,kelas:exportClass,teacherId:exportTeacher,teacherName:mode==='teacher'?exportScopeTeacher:'Semua Guru'});showToast('success',`Ekspor ${mode==='date'?'per tanggal':mode==='class'?'per kelas':'per guru'} berhasil: ${rowCount} baris`);} 
 
   return <>
     <section className="toolbar card">
@@ -513,13 +523,35 @@ function Scan({user,showToast}:any){
       <article><span>Total scan</span><b>{rows.length}</b></article>
     </div>
     <section className="card">
-      <div className="filters">
-        <select value={kelas} disabled={user.role==='guru'} onChange={event=>setKelas(event.target.value)}>
-          <option value="ALL">Semua Kelas</option>
-          {(user.role==='guru bidang'?user.kelas.split(',').map((value:string)=>value.trim()).filter(Boolean):classOptions).map((value:string)=><option key={value} value={value}>{value}</option>)}
-        </select>
-        <input placeholder="Cari nama / NISN" value={q} onChange={event=>setQ(event.target.value)}/>
-        <button onClick={exportExcel}>Export Harian</button><button className="primary" onClick={()=>exportAttendanceReport().then(n=>showToast('success',`${n} rekap siswa diekspor`)).catch((error:unknown)=>showToast('error',error instanceof Error?error.message:'Export gagal'))}>Export Rekap</button>
+      <div className="filters" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:'.75rem',alignItems:'end'}}>
+        <label style={{display:'grid',gap:'.35rem',fontSize:'.8rem',fontWeight:700,color:'#1e3a5f'}}>
+          <span>Tanggal</span>
+          <input type="date" value={selectedDate} onChange={event=>setSelectedDate(event.target.value)} disabled={autoDate} />
+        </label>
+        <label style={{display:'grid',gap:'.35rem',fontSize:'.8rem',fontWeight:700,color:'#1e3a5f'}}>
+          <span>Kelas</span>
+          <select value={kelas} onChange={event=>setKelas(event.target.value)}>
+            <option value="ALL">Semua Kelas</option>
+            {(user.role==='guru bidang'?user.kelas.split(',').map((value:string)=>value.trim()).filter(Boolean):classOptions).map((value:string)=><option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label style={{display:'grid',gap:'.35rem',fontSize:'.8rem',fontWeight:700,color:'#1e3a5f'}}>
+          <span>Guru</span>
+          <select value={teacherFilter} onChange={event=>setTeacherFilter(event.target.value)}>
+            <option value="ALL">Semua Guru</option>
+            {teacherOptions.map((teacher)=><option key={teacher.id} value={teacher.id}>{teacher.nama} ({teacher.role})</option>)}
+          </select>
+        </label>
+        <label style={{display:'grid',gap:'.35rem',fontSize:'.8rem',fontWeight:700,color:'#1e3a5f'}}>
+          <span>Pencarian</span>
+          <input placeholder="Cari nama / NISN" value={q} onChange={event=>setQ(event.target.value)}/>
+        </label>
+      </div>
+      <div className="filters" style={{marginTop:'.9rem',display:'flex',gap:'.6rem',flexWrap:'wrap'}}>
+        <button onClick={() => exportFilteredReport('date')}>Ekspor Per Tanggal</button>
+        <button onClick={() => exportFilteredReport('class')}>Ekspor Per Kelas</button>
+        <button onClick={() => exportFilteredReport('teacher')}>Ekspor Per Guru</button>
+        <button className="primary" onClick={()=>exportAttendanceReport().then(n=>showToast('success',`${n} rekap siswa diekspor`)).catch((error:unknown)=>showToast('error',error instanceof Error?error.message:'Export gagal'))}>Ekspor Rekap Formal</button>
       </div>
       <table>
         <thead><tr><th>Jam</th><th>NISN</th><th>Nama</th><th>Kelas</th><th>Status</th></tr></thead>
