@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, setDoc } from 'firebase/firestore';
 import type { Student, Teacher } from './types';
 
 const app = initializeApp({
@@ -63,23 +63,14 @@ export async function publishInitialData(students: Student[], teachers: Teacher[
 }
 
 export function subscribePublicData(onData: (kind: 'students' | 'teachers', data: (Student | Teacher)[]) => void) {
-  let stopped = false;
-  let timer: number | undefined;
-  const poll = async () => {
-    if (stopped || !navigator.onLine || document.visibilityState === 'hidden') return;
-    try {
-      const data = await loadPublicData();
-      onData('students', data.students);
-      onData('teachers', data.teachers);
-    } catch (error) {
-      const details = error as Error & { code?: string };
-      console.warn('Sinkronisasi Firebase ditunda', { code: details.code, message: details.message });
-      if (details.code === 'resource-exhausted') stopped = true;
-    }
-  };
-  timer = window.setInterval(() => void poll(), 300000);
+  const studentUnsubscribe = onSnapshot(collection(firestore, 'students'), snapshot => {
+    onData('students', snapshot.docs.map(item => item.data() as Student));
+  }, error => console.warn('Sinkronisasi data siswa realtime ditunda', error));
+  const teacherUnsubscribe = onSnapshot(collection(firestore, 'teachers'), snapshot => {
+    onData('teachers', snapshot.docs.map(item => item.data() as Teacher));
+  }, error => console.warn('Sinkronisasi data guru realtime ditunda', error));
   return () => {
-    stopped = true;
-    if (timer !== undefined) window.clearInterval(timer);
+    studentUnsubscribe();
+    teacherUnsubscribe();
   };
 }

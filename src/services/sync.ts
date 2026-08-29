@@ -197,6 +197,7 @@ export async function syncAll() {
   await pullAttendance();
 
   localStorage.setItem("lastSync", new Date().toISOString());
+  window.dispatchEvent(new CustomEvent("public-data-updated", { detail: "sync" }));
 
   return {
     sent: students.length + teachers.length + attendance.length
