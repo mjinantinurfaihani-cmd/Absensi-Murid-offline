@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
-import type { Student, Teacher } from './types';
+import type { Attendance, Student, Teacher } from './types';
 
 const app = initializeApp({
   apiKey: 'AIzaSyCLxH3R9QUXkPs_lJoZjCsjBxMRgGnVH9I',
@@ -39,6 +39,19 @@ export async function loadPublicData() {
   };
 }
 
+export async function loadAllPublicData() {
+  const [students, teachers, attendance] = await Promise.all([
+    getDocs(collection(firestore, 'students')),
+    getDocs(collection(firestore, 'teachers')),
+    getDocs(collection(firestore, 'attendance'))
+  ]);
+  return {
+    students: students.docs.map(snapshot => snapshot.data() as Student),
+    teachers: teachers.docs.map(snapshot => snapshot.data() as Teacher),
+    attendance: attendance.docs.map(snapshot => snapshot.data() as Attendance)
+  };
+}
+
 export async function publishStudent(student: Student) {
   await setDoc(doc(firestore, 'students', student.id), student);
 }
@@ -59,6 +72,14 @@ export async function publishInitialData(students: Student[], teachers: Teacher[
   await Promise.all([
     ...students.map(publishStudent),
     ...teachers.map(publishTeacher)
+  ]);
+}
+
+export async function publishAllData(students: Student[], teachers: Teacher[], attendance: Attendance[]) {
+  await Promise.all([
+    ...students.map(publishStudent),
+    ...teachers.map(publishTeacher),
+    ...attendance.map(record => setDoc(doc(firestore, 'attendance', record.id), record))
   ]);
 }
 

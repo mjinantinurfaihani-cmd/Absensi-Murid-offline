@@ -18,6 +18,8 @@ export default function QrCardsPanel({ user, showToast }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [previewTitle, setPreviewTitle] = useState('Preview kartu QR');
   const [busy, setBusy] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewProgress, setPreviewProgress] = useState(0);
   const [query, setQuery] = useState('');
   const [kelas, setKelas] = useState('ALL');
   const assignedClasses = user.role === 'admin'
@@ -33,6 +35,14 @@ export default function QrCardsPanel({ user, showToast }: Props) {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, []);
+
+  useEffect(() => {
+    if (!previewLoading) return;
+    const timer = window.setInterval(() => {
+      setPreviewProgress((value) => Math.min(92, value + (value < 45 ? 9 : 3)));
+    }, 180);
+    return () => window.clearInterval(timer);
+  }, [previewLoading]);
 
   function showBlob(blob: Blob, title: string) {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -60,10 +70,14 @@ export default function QrCardsPanel({ user, showToast }: Props) {
   async function previewAll() {
     try {
       setBusy(true);
+      setPreviewLoading(true);
+      setPreviewProgress(8);
       showBlob(await createAllStudentCardsPdf(visibleStudents), 'Preview hasil filter - F4 portrait');
+      setPreviewProgress(100);
     } catch (error) {
       showToast('error', error instanceof Error ? error.message : 'Preview PDF gagal');
     } finally {
+      setPreviewLoading(false);
       setBusy(false);
     }
   }
@@ -88,7 +102,9 @@ export default function QrCardsPanel({ user, showToast }: Props) {
           <p className="muted">Kartu lanskap 85,6 x 53,98 mm. PDF gabungan memakai halaman F4 portrait 215,9 x 330 mm.</p>
         </div>
         <div className="qr-main-actions">
-          <button disabled={!students.length || busy} onClick={previewAll}>Preview semua</button>
+          <button disabled={!students.length || busy} onClick={previewAll}>
+            {previewLoading ? `Menyiapkan preview ${previewProgress}%` : 'Preview semua'}
+          </button>
           <button className="primary" disabled={!students.length || busy} onClick={downloadAll}>
             {busy ? 'Menyiapkan PDF...' : 'Download semua PDF'}
           </button>
@@ -129,6 +145,14 @@ export default function QrCardsPanel({ user, showToast }: Props) {
           </div>
           {previewUrl ? (
             <iframe title={previewTitle} src={previewUrl} className="pdf-preview-frame" />
+          ) : previewLoading ? (
+            <div className="pdf-preview-loading" role="status" aria-live="polite">
+              <div className="pdf-loading-spinner" aria-hidden="true" />
+              <strong>Membuat preview PDF...</strong>
+              <span>Menyiapkan {visibleStudents.length} kartu QR</span>
+              <div className="pdf-loading-track"><i style={{ width: `${previewProgress}%` }} /></div>
+              <b>{previewProgress}%</b>
+            </div>
           ) : (
             <div className="pdf-preview-empty">Pilih Preview pada kartu atau Preview semua.</div>
           )}

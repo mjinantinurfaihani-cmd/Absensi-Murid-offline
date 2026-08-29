@@ -4,15 +4,15 @@ import { initSqlStore } from './sqlStore';
 import { applyCloudData, loadPublicData, publishInitialData, subscribePublicData } from './firebaseStore';
 import type { Student, Teacher } from './types';
 
-async function replacePublicTable<T extends { id: string; deleted?: boolean | number; updatedAt?: string; nisn?: string; nik?: string }>(table: any, rows: T[]) {
+async function mergePublicTable<T extends { id: string; deleted?: boolean | number; updatedAt?: string; nisn?: string; nik?: string }>(table: any, rows: T[]) {
+	const local = await table.toArray() as T[];
 	const byKey = new Map<string, T>();
+	for (const row of local) byKey.set(row.nisn || row.nik || row.id, row);
 	for (const row of rows) {
-		if (row.deleted) continue;
 		const key = row.nisn || row.nik || row.id;
 		const current = byKey.get(key);
-		if (!current || String(row.updatedAt || '') >= String(current.updatedAt || '')) byKey.set(key, row);
+		if (!current || String(row.updatedAt || '') > String(current.updatedAt || '')) byKey.set(key, { ...row, synced: 1 } as T);
 	}
-	await table.clear();
 	await table.bulkPut([...byKey.values()]);
 }
 
@@ -23,8 +23,8 @@ async function initialize() {
 	void hydratePublicData();
 	subscribePublicData((kind, data) => {
 		void applyCloudData(async () => {
-			if (kind === 'students') await replacePublicTable(db.students, data as Student[]);
-			else await replacePublicTable(db.teachers, data as Teacher[]);
+			if (kind === 'students') await mergePublicTable(db.students, data as Student[]);
+			else await mergePublicTable(db.teachers, data as Teacher[]);
 			window.dispatchEvent(new CustomEvent('public-data-updated', { detail: kind }));
 		}).catch(error => console.warn('Gagal menerapkan sinkronisasi realtime', error));
 	});
@@ -41,8 +41,8 @@ async function hydratePublicData() {
 		]);
 		if (cloud.students.length || cloud.teachers.length) {
 			await applyCloudData(async () => {
-				await replacePublicTable(db.students, cloud.students);
-				await replacePublicTable(db.teachers, cloud.teachers);
+				await mergePublicTable(db.students, cloud.students);
+				await mergePublicTable(db.teachers, cloud.teachers);
 			});
 		} else {
 			await publishInitialData(localStudents, localTeachers);

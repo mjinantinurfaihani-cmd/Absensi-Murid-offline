@@ -113,6 +113,10 @@ const app = express();
 // Capture raw body for webhook signature verification while still parsing JSON
 app.use(express.json({ limit: '10mb', verify: (req, _res, buf) => { try { req.rawBody = buf.toString(); } catch (e) { req.rawBody = ''; } } }));
 app.use((request, response, next) => {
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  if (request.method === 'OPTIONS') return response.sendStatus(204);
   response.setHeader('Permissions-Policy', 'camera=(self)');
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'same-origin');
