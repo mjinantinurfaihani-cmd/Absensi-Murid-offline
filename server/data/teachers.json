@@ -3,13 +3,13 @@
     "id": "admin-001",
     "nama": "Administrator",
     "nik": "admin",
-    "password": "admin123",
+    "password": "Cepi1978",
     "role": "admin",
     "kelas": "SEMUA",
-    "deviceId": "1e6ea7fe-5ed6-4e99-aeed-f844bbb3b125",
+    "deviceId": "56c8e206-9c72-40f2-bfb6-25f3a14fb026",
     "deleted": false,
     "synced": 0,
-    "updatedAt": "2026-08-23T03:49:13.133Z"
+    "updatedAt": "2026-08-29T09:17:10.950Z"
   },
   {
     "id": "guru-001",
@@ -18,10 +18,10 @@
     "password": "123456",
     "role": "guru",
     "kelas": "4A",
-    "deviceId": "1e6ea7fe-5ed6-4e99-aeed-f844bbb3b125",
+    "deviceId": "56c8e206-9c72-40f2-bfb6-25f3a14fb026",
     "deleted": false,
     "synced": 0,
-    "updatedAt": "2026-08-23T03:49:13.133Z"
+    "updatedAt": "2026-08-29T07:48:23.793Z"
   },
   {
     "id": "27e09f9f-de9b-4e28-a6e3-f46eefce4043",
