@@ -2,6 +2,8 @@ function StudentsPage({user,showToast}:any){const[refreshKey,setRefreshKey]=useS
 async function deleteAllStudents(showToast:any){if(!window.confirm('Apakah anda yakin ingin menghapus semua data siswa?'))return;const students=await db.students.toArray();if(!students.length){showToast('info','Tidak ada data siswa untuk dihapus');return}await db.students.bulkDelete(students.map(student=>student.id));showToast('success','Semua data siswa berhasil dihapus')}
 import{useEffect,useMemo,useRef,useState,useImperativeHandle,forwardRef}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed,softDeleteStudent,softDeleteTeacher}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify,playGlitchSound}from'./notify';import{confirmAttendanceConflict,syncAdminDirectoryData,syncAll}from'./sync';import{downloadTemplate,exportAttendanceSnapshot,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
 import SqlConsole from './components/SqlConsole';
+import AttendanceDifferenceAlert, { type AttendanceDifference } from './components/AttendanceDifferenceAlert';
+import { getAttendanceSyncMonitor } from './services/attendanceSyncMonitor';
 
 import{fetchTeacherByNik,loadPublicData,publishInitialData}from'./firebaseStore';
 import BackupControls from './components/BackupControls';
@@ -43,6 +45,10 @@ export default function App() {
   const [studentsMap, setStudentsMap] = useState<Record<string, { nama: string; kelas: string }>>({});
   const [studentsLoaded, setStudentsLoaded] = useState(false);
   const [bufferedConflicts, setBufferedConflicts] = useState<AttendanceConflict[]>([]);
+  const [currentDifference, setCurrentDifference] = useState<AttendanceDifference | null>(null);
+  const [differenceFading, setDifferenceFading] = useState(false);
+  const [teachers, setTeachers] = useState<Map<string, Teacher>>(new Map());
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
 
   async function loadStudentsMap() {
     try{
@@ -113,7 +119,44 @@ export default function App() {
           }
         }catch(err){/* ignore diff errors */}
         setConflicts(unresolved);
-      }catch(e){showToast('error',e instanceof Error?e.message:'Sinkronisasi gagal')}};const timer=setInterval(online,15000);window.addEventListener('online',online);if(navigator.onLine)online();return()=>{clearInterval(timer);window.removeEventListener('online',online)}},[user?.role,user?.id,showToast]);async function confirm(conflict:AttendanceConflict){try{const result=await confirmAttendanceConflict(conflict.key,deviceId);if(result.resolved){setFading(conflict.key);window.setTimeout(()=>{setConflicts(current=>current.filter(item=>item.key!==conflict.key));setFading(null)},350);setFeedback(`Pesan konflik kehadiran ${conflict.tanggal} sudah dikonfirmasi semua guru terkait.`)}else{setConflicts(current=>current.map(item=>item.key===conflict.key?result:item));setFeedback(`Konfirmasi Anda tersimpan. Menunggu guru lain mengonfirmasi pesan ${conflict.tanggal}.`)}}catch(error){showToast('error',error instanceof Error?error.message:'Konfirmasi gagal')}}if(!ready)return <div className="splash">Menyiapkan database lokal...</div>;if(!user)return <Login onLogin={u=>{localStorage.setItem('session',JSON.stringify(u));setUser(u)}} showToast={showToast}/>;return <><Shell user={user} logout={()=>{localStorage.removeItem('session');setUser(null)}} toast={toast} showToast={showToast} closeToast={closeToast}/><ConflictNotice user={user} conflicts={conflicts} fading={fading} feedback={feedback} onConfirm={confirm} onCloseFeedback={()=>setFeedback('')} showToast={showToast}/></>;}
+      }catch(e){showToast('error',e instanceof Error?e.message:'Sinkronisasi gagal')}};const timer=setInterval(online,15000);window.addEventListener('online',online);if(navigator.onLine)online();return()=>{clearInterval(timer);window.removeEventListener('online',online)}},[user?.role,user?.id,showToast]);
+
+  // Monitor attendance differences between class teachers and subject teachers
+  useEffect(() => {
+    if (!ready || !studentsLoaded) return;
+    
+    const setupMonitoring = async () => {
+      try {
+        const [attendanceList, teacherList, studentsList] = await Promise.all([
+          db.attendance.toArray(),
+          db.teachers.toArray(),
+          db.students.toArray()
+        ]);
+
+        setAttendance(attendanceList);
+        setTeachers(new Map(teacherList.map(t => [t.id, t])));
+
+        const monitor = getAttendanceSyncMonitor({
+          onDifferenceDetected: (difference) => {
+            // Only show alert if current user is class teacher for this class
+            if (user && (user.role === 'admin' || (user.role === 'guru' && normalizeClassList(user.kelas).includes(difference.studentClass)))) {
+              setCurrentDifference(difference);
+              setDifferenceFading(false);
+            }
+          }
+        });
+
+        const studentsMap = new Map(studentsList.map(s => [s.id, s]));
+        monitor.monitorChanges(attendanceList, studentsMap, new Map(teacherList.map(t => [t.id, t])));
+      } catch (error) {
+        console.error('Error setting up attendance monitoring:', error);
+      }
+    };
+
+    setupMonitoring();
+  }, [ready, studentsLoaded, user]);
+
+  async function confirm(conflict:AttendanceConflict){try{const result=await confirmAttendanceConflict(conflict.key,deviceId);if(result.resolved){setFading(conflict.key);window.setTimeout(()=>{setConflicts(current=>current.filter(item=>item.key!==conflict.key));setFading(null)},350);setFeedback(`Pesan konflik kehadiran ${conflict.tanggal} sudah dikonfirmasi semua guru terkait.`)}else{setConflicts(current=>current.map(item=>item.key===conflict.key?result:item));setFeedback(`Konfirmasi Anda tersimpan. Menunggu guru lain mengonfirmasi pesan ${conflict.tanggal}.`)}}catch(error){showToast('error',error instanceof Error?error.message:'Konfirmasi gagal')}}if(!ready)return <div className="splash">Menyiapkan database lokal...</div>;if(!user)return <Login onLogin={u=>{localStorage.setItem('session',JSON.stringify(u));setUser(u)}} showToast={showToast}/>;return <><Shell user={user} logout={()=>{localStorage.removeItem('session');setUser(null)}} toast={toast} showToast={showToast} closeToast={closeToast}/><ConflictNotice user={user} conflicts={conflicts} fading={fading} feedback={feedback} onConfirm={confirm} onCloseFeedback={()=>setFeedback('')} showToast={showToast}/><AttendanceDifferenceAlert difference={currentDifference} fading={differenceFading} onConfirm={()=>{setDifferenceFading(true);window.setTimeout(()=>{setCurrentDifference(null);setDifferenceFading(false)},350)}} /></>;}
 
 function getAssignedClasses(user:UserSession|null){if(!user||!user.kelas||user.role==='admin')return [];return normalizeClassList(user.kelas);}
 function getPrimaryClass(user:UserSession|null){const assigned=getAssignedClasses(user);return assigned[0]||'ALL';}
