@@ -17,6 +17,41 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 let applyingCloudData = false;
 
+type FirestoreRecord = Record<string, unknown>;
+
+function normalizeRole(value: unknown): Teacher['role'] {
+  return value === 'guru bidang' || value === 'guru' || value === 'admin' ? value : 'guru';
+}
+
+function normalizeStudent(raw: FirestoreRecord): Student {
+  return {
+    id: String(raw.id ?? raw.studentId ?? crypto.randomUUID()),
+    nisn: String(raw.nisn ?? ''),
+    nama: String(raw.nama ?? raw.namaLengkap ?? 'Tanpa Nama'),
+    kelas: String(raw.kelas ?? ''),
+    kontak: String(raw.kontak ?? ''),
+    deviceId: typeof raw.deviceId === 'string' ? raw.deviceId : undefined,
+    deleted: Boolean(raw.deleted ?? false),
+    updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
+    synced: Number(raw.synced ?? 1)
+  };
+}
+
+function normalizeTeacher(raw: FirestoreRecord): Teacher {
+  return {
+    id: String(raw.id ?? raw.teacherId ?? crypto.randomUUID()),
+    nama: String(raw.nama ?? raw.namaLengkap ?? 'Tanpa Nama'),
+    nik: String(raw.nik ?? ''),
+    role: normalizeRole(raw.role),
+    kelas: String(raw.kelas ?? 'SEMUA'),
+    password: String(raw.password ?? ''),
+    deviceId: typeof raw.deviceId === 'string' ? raw.deviceId : undefined,
+    deleted: Boolean(raw.deleted ?? false),
+    updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
+    synced: Number(raw.synced ?? 1)
+  };
+}
+
 export function isApplyingCloudData() {
   return applyingCloudData;
 }
@@ -36,8 +71,8 @@ export async function loadPublicData() {
     getDocs(collection(firestore, 'teachers'))
   ]);
   return {
-    students: studentSnapshot.docs.map(snapshot => snapshot.data() as Student),
-    teachers: teacherSnapshot.docs.map(snapshot => snapshot.data() as Teacher)
+    students: studentSnapshot.docs.map(snapshot => normalizeStudent(snapshot.data() as FirestoreRecord)),
+    teachers: teacherSnapshot.docs.map(snapshot => normalizeTeacher(snapshot.data() as FirestoreRecord))
   };
 }
 
@@ -48,18 +83,20 @@ export async function loadAllPublicData() {
     getDocs(collection(firestore, 'attendance'))
   ]);
   return {
-    students: students.docs.map(snapshot => snapshot.data() as Student),
-    teachers: teachers.docs.map(snapshot => snapshot.data() as Teacher),
+    students: students.docs.map(snapshot => normalizeStudent(snapshot.data() as FirestoreRecord)),
+    teachers: teachers.docs.map(snapshot => normalizeTeacher(snapshot.data() as FirestoreRecord)),
     attendance: attendance.docs.map(snapshot => snapshot.data() as Attendance)
   };
 }
 
 export async function publishStudent(student: Student) {
-  await setDoc(doc(firestore, 'students', student.id), student);
+  const normalized = normalizeStudent(student as unknown as FirestoreRecord);
+  await setDoc(doc(firestore, 'students', normalized.id), normalized);
 }
 
 export async function publishTeacher(teacher: Teacher) {
-  await setDoc(doc(firestore, 'teachers', teacher.id), teacher);
+  const normalized = normalizeTeacher(teacher as unknown as FirestoreRecord);
+  await setDoc(doc(firestore, 'teachers', normalized.id), normalized);
 }
 
 export async function removePublicStudent(id: string) {

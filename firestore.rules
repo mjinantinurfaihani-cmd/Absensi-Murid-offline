@@ -58,16 +58,18 @@ service cloud.firestore {
     // ============================================
     match /teachers/{teacherId} {
       
-      // Required fields: id, nik, namaLengkap, role, kelas, email, updatedAt, deleted
+      // Required fields: id, nik, nama (or legacy namaLengkap), role, kelas, updatedAt, deleted
       function isValidTeacher(doc) {
-        return doc.keys().hasAll(['id', 'nik', 'namaLengkap', 'role', 'kelas', 'updatedAt', 'deleted']) &&
+        let hasName = (doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0);
+        return doc.keys().hasAll(['id', 'nik', 'role', 'kelas', 'updatedAt', 'deleted']) &&
                isValidUUID(doc.id) &&
                doc.nik is string && doc.nik.size > 0 &&
-               doc.namaLengkap is string && doc.namaLengkap.size > 0 &&
+               hasName &&
                doc.role is string && doc.role in ['admin', 'guru', 'guru bidang'] &&
                doc.kelas is string && doc.kelas.size > 0 &&
                isValidTimestamp(doc.updatedAt) &&
-               (doc.deleted is bool || doc.deleted is number);
+               (doc.deleted is bool || doc.deleted is number) &&
+               (doc.password is string || !doc.keys().hasAll(['password']));
       }
       
       // Read: Anyone with access can read
@@ -91,12 +93,13 @@ service cloud.firestore {
     // ============================================
     match /students/{studentId} {
       
-      // Required fields: id, nisn, namaLengkap, kelas, updatedAt, deleted
+      // Required fields: id, nisn, nama (or legacy namaLengkap), kelas, updatedAt, deleted
       function isValidStudent(doc) {
-        return doc.keys().hasAll(['id', 'nisn', 'namaLengkap', 'kelas', 'updatedAt', 'deleted']) &&
+        let hasName = (doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0);
+        return doc.keys().hasAll(['id', 'nisn', 'kelas', 'updatedAt', 'deleted']) &&
                isValidUUID(doc.id) &&
                doc.nisn is string && doc.nisn.size > 0 &&
-               doc.namaLengkap is string && doc.namaLengkap.size > 0 &&
+               hasName &&
                doc.kelas is string && doc.kelas.size > 0 &&
                isValidTimestamp(doc.updatedAt) &&
                (doc.deleted is bool || doc.deleted is number);

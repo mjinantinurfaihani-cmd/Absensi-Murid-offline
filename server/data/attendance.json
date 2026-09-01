@@ -2808,5 +2808,33 @@
     "deleted": false,
     "updatedAt": "2026-08-23T10:36:23.145Z",
     "synced": 0
+  },
+  {
+    "id": "conflict-test-001",
+    "studentId": "s-001",
+    "tanggal": "2026-09-01",
+    "jamMasuk": "07:00",
+    "jamPulang": "14:00",
+    "status": "HADIR",
+    "ownerId": "guru-001",
+    "ownerRole": "guru",
+    "deviceId": "browser-device",
+    "deleted": 0,
+    "updatedAt": "2026-09-01T07:00:00.000Z",
+    "synced": 0
+  },
+  {
+    "id": "conflict-test-002",
+    "studentId": "s-001",
+    "tanggal": "2026-09-01",
+    "jamMasuk": "07:00",
+    "jamPulang": "14:00",
+    "status": "ALPA",
+    "ownerId": "b52d5373-e7c3-4ca8-834b-695f045a1e49",
+    "ownerRole": "guru bidang",
+    "deviceId": "browser-device",
+    "deleted": 0,
+    "updatedAt": "2026-09-01T07:02:00.000Z",
+    "synced": 0
   }
 ]
