@@ -6,46 +6,13 @@
     "synced": 0
   },
   {
+    "id": "test-rate",
+    "nisn": "123"
+  },
+  {
     "id": "student-valid",
     "nisn": "99999",
     "namaLengkap": "Valid Student",
     "updatedAt": "2025-01-09T10:00:00.000Z"
-  },
-  {
-    "id": "student-log-test-1",
-    "nisn": "88888",
-    "namaLengkap": "Logging Test Student",
-    "updatedAt": "2025-01-09T10:00:00.000Z",
-    "deleted": 0
-  },
-  {
-    "id": "student-log-test-2",
-    "nisn": "77777",
-    "namaLengkap": "Another Student",
-    "updatedAt": "2025-01-09T11:00:00.000Z",
-    "deleted": 0
-  },
-  {
-    "id": "student-log-test-3",
-    "nisn": "66666",
-    "namaLengkap": "Third Student",
-    "updatedAt": "2025-01-09T12:00:00.000Z",
-    "deleted": 0
-  },
-  {
-    "id": "student-001",
-    "nisn": "0011223344",
-    "namaLengkap": "Ahmad Rizki",
-    "kelas": "12-A",
-    "updatedAt": "2025-01-09T11:00:00.000Z",
-    "deleted": 0
-  },
-  {
-    "id": "student-002",
-    "nisn": "0011223345",
-    "namaLengkap": "Siti Nurhaliza",
-    "kelas": "12-A",
-    "updatedAt": "2025-01-09T11:05:00.000Z",
-    "deleted": 0
   }
 ]

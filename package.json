@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "server": "node server/index.mjs",
+    "test:phase3b": "node test-phase3b.mjs",
     "dev:https": "vite --host 127.0.0.1 --mode https",
     "start:https": "npm run build && node server/https.mjs",
     "preview:https": "vite preview --host 127.0.0.1 --mode https",

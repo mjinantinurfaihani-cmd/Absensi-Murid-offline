@@ -13,6 +13,9 @@ type Props = {
   showToast: (type: 'success' | 'error' | 'info', message: string) => void;
 };
 
+const safeText = (value: unknown) => String(value ?? '').trim();
+const compareText = (left: unknown, right: unknown) => safeText(left).localeCompare(safeText(right), 'id', { numeric: true });
+
 export default function QrCardsPanel({ user, showToast }: Props) {
   const [students, setStudents] = useState<Student[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -30,7 +33,7 @@ export default function QrCardsPanel({ user, showToast }: Props) {
     db.students
       .filter((student) => !student.deleted && (!assignedClasses || assignedClasses.includes(student.kelas)))
       .toArray()
-      .then((items) => setStudents(items.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama))));
+      .then((items) => setStudents(items.sort((a, b) => compareText(a.kelas, b.kelas) || compareText(a.nama, b.nama))));
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };

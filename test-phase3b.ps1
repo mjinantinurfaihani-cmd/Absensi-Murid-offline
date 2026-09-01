@@ -294,7 +294,7 @@ for ($i = 1; $i -le 51; $i++) {
     }
     
     if ($i -eq 50 -or $i -eq 51) {
-        Write-Host "Request $i: $status"
+        Write-Host ("Request " + $i + ": " + $status)
     }
 }
 

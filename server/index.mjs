@@ -605,29 +605,21 @@ const server = http.createServer((request, response) => {
       const old = records.get(item.id);
       const incomingTime = toTimestamp(item.updatedAt);
       const oldTime = old ? toTimestamp(old.updatedAt) : 0;
+
+      if (item.deleted === 1 || item.deleted === true) {
+        if (incomingTime >= oldTime) {
+          records.delete(item.id);
+          mergedCount++;
+        } else {
+          rejectedCount++;
+        }
+        continue;
+      }
       
       // If old record doesn't exist, always accept new record
       if (!old) {
         records.set(item.id, item);
         mergedCount++;
-        continue;
-      }
-      
-      // Soft-delete permanence: once deleted=1, can only change if incoming timestamp is STRICTLY newer
-      if (old.deleted === 1 && incomingTime <= oldTime) {
-        // Keep old deleted state, reject any resurrection attempt with equal/older timestamp
-        records.set(item.id, { ...old });
-        rejectedCount++;
-        appendLog('debug', `Soft-delete permanence enforced for ${item.id}`, {
-          deviceId,
-          tableName,
-          incomingTime,
-          oldTime
-        });
-        continue;
-      }
-      
-      // Newer timestamp always wins
       if (incomingTime > oldTime) {
         records.set(item.id, item);
         mergedCount++;

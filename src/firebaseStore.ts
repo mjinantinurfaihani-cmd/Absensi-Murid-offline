@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, getFirestore, limit, query, setDoc, where } from 'firebase/firestore';
 import type { Attendance, Student, Teacher } from './types';
 
 const firebaseConfig = {
@@ -66,14 +66,23 @@ export async function applyCloudData<T>(operation: () => Promise<T>) {
 }
 
 export async function loadPublicData() {
-  const [studentSnapshot, teacherSnapshot] = await Promise.all([
-    getDocs(collection(firestore, 'students')),
-    getDocs(collection(firestore, 'teachers'))
-  ]);
-  return {
-    students: studentSnapshot.docs.map(snapshot => normalizeStudent(snapshot.data() as FirestoreRecord)),
-    teachers: teacherSnapshot.docs.map(snapshot => normalizeTeacher(snapshot.data() as FirestoreRecord))
-  };
+  try {
+    const [studentSnapshot, teacherSnapshot] = await Promise.all([
+      getDocs(collection(firestore, 'students')),
+      getDocs(collection(firestore, 'teachers'))
+    ]);
+    const result = {
+      students: studentSnapshot.docs.map(snapshot => normalizeStudent(snapshot.data() as FirestoreRecord)),
+      teachers: teacherSnapshot.docs.map(snapshot => normalizeTeacher(snapshot.data() as FirestoreRecord))
+    };
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Loaded ${result.teachers.length} teachers, ${result.students.length} students`);
+    }
+    return result;
+  } catch (error) {
+    console.error('[Firebase] loadPublicData error:', error instanceof Error ? error.message : error);
+    throw error;
+  }
 }
 
 export async function loadAllPublicData() {
@@ -89,14 +98,56 @@ export async function loadAllPublicData() {
   };
 }
 
+export async function fetchTeacherByNik(nik: string): Promise<Teacher | null> {
+  const snapshot = await getDocs(query(collection(firestore, 'teachers'), where('nik', '==', nik), limit(1)));
+  if (snapshot.empty) return null;
+  return normalizeTeacher(snapshot.docs[0].data() as FirestoreRecord);
+}
+
 export async function publishStudent(student: Student) {
-  const normalized = normalizeStudent(student as unknown as FirestoreRecord);
-  await setDoc(doc(firestore, 'students', normalized.id), normalized);
+  try {
+    const normalized = normalizeStudent(student as unknown as FirestoreRecord);
+    if (normalized.deleted === true || normalized.deleted === 1) {
+      await deleteDoc(doc(firestore, 'students', normalized.id));
+      if (import.meta.env.DEV) {
+        console.log(`[Firebase] Student deleted from cloud: ${normalized.id}`);
+      }
+      return;
+    }
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Publishing student: ${normalized.nama} (${normalized.nisn})`);
+    }
+    await setDoc(doc(firestore, 'students', normalized.id), normalized);
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Student published successfully: ${normalized.id}`);
+    }
+  } catch (error) {
+    console.error('[Firebase] publishStudent failed:', error instanceof Error ? error.message : error);
+    throw error;
+  }
 }
 
 export async function publishTeacher(teacher: Teacher) {
-  const normalized = normalizeTeacher(teacher as unknown as FirestoreRecord);
-  await setDoc(doc(firestore, 'teachers', normalized.id), normalized);
+  try {
+    const normalized = normalizeTeacher(teacher as unknown as FirestoreRecord);
+    if (normalized.deleted === true || normalized.deleted === 1) {
+      await deleteDoc(doc(firestore, 'teachers', normalized.id));
+      if (import.meta.env.DEV) {
+        console.log(`[Firebase] Teacher deleted from cloud: ${normalized.id}`);
+      }
+      return;
+    }
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Publishing teacher: ${normalized.nama} (${normalized.nik})`);
+    }
+    await setDoc(doc(firestore, 'teachers', normalized.id), normalized);
+    if (import.meta.env.DEV) {
+      console.log(`[Firebase] Teacher published successfully: ${normalized.id}`);
+    }
+  } catch (error) {
+    console.error('[Firebase] publishTeacher failed:', error instanceof Error ? error.message : error);
+    throw error;
+  }
 }
 
 export async function removePublicStudent(id: string) {

@@ -1,20 +1,28 @@
 {
-  "successful_syncs": 2,
-  "failed_syncs": 1,
-  "total_records_synced": 3,
-  "total_conflicts_detected": 4,
-  "rate_limit_hits": 0,
-  "validation_failures": 1,
-  "avg_sync_duration_ms": 4,
-  "max_payload_size_bytes": 274,
+  "successful_syncs": 240,
+  "failed_syncs": 33,
+  "total_records_synced": 241,
+  "total_conflicts_detected": 718,
+  "rate_limit_hits": 14,
+  "validation_failures": 38,
+  "avg_sync_duration_ms": 10.229166666666677,
+  "max_payload_size_bytes": 12582934,
   "syncs_by_table": {
     "teachers": 1,
-    "students": 2,
-    "attendance": 0
+    "students": 259,
+    "attendance": 13
   },
   "failure_reasons": {
-    "students:invalid_content_type": 1,
-    "content_type_validation": 1
+    "students:invalid_content_type": 6,
+    "content_type_validation": 6,
+    "malicious:invalid_table_name_in_request": 5,
+    "attendance:record_validation_0": 10,
+    "record_validation": 10,
+    "students:rate_limit_exceeded": 11,
+    "rate_limit": 14,
+    "attendance:rate_limit_exceeded": 3,
+    "students:payload_too_large": 3,
+    "payload_size_validation": 3
   },
-  "last_updated": "2026-09-01T06:21:54.350Z"
+  "last_updated": "2026-09-01T09:46:52.347Z"
 }

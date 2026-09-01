@@ -33,12 +33,12 @@ function uniqueRows(name:string,rows:any[]){
 	const key=name==='students'?'nisn':name==='teachers'?'nik':'id';
 	const byKey=new Map<string,any>();
 	for(const row of rows){
+		if(row?.deleted===1||row?.deleted===true) continue;
 		const value=String(row[key]||row.id);
 		const current=byKey.get(value);
 		if(!current||isNewer(row,current))byKey.set(value,row);
 	}
-	// Filter: exclude soft-deleted records (deleted=1)
-	return [...byKey.values()].filter(row=>row.deleted!==1);
+	return [...byKey.values()];
 }
 
 async function syncTable(name:string,table:any){
@@ -79,17 +79,14 @@ type SyncRow=Student|Teacher|Attendance;
 function mergeRows<T extends SyncRow>(local:T[],remote:T[]){
 	const merged=new Map(local.map(row=>[row.id,row]));
 	for(const row of remote){
+		if(row?.deleted===1||row?.deleted===true) {
+			merged.delete(row.id);
+			continue;
+		}
 		const current=merged.get(row.id);
 		if(!current||isNewer(row,current))merged.set(row.id,row);
 	}
-	// Respect soft-delete: if deleted=1 with newer timestamp, keep deleted; cannot resurrect with older timestamps
-	const result=[...merged.values()];
-	return result.filter(row=>{
-		if(row.deleted===1)return true;// Keep for audit trail
-		const deletedVersion=result.find(r=>r.id===row.id&&r.deleted===1);
-		if(!deletedVersion)return true;
-		return toTimestamp(row.updatedAt)>toTimestamp(deletedVersion.updatedAt);
-	});
+	return [...merged.values()].filter(row => !(row?.deleted===1 || row?.deleted===true));
 }
 
 async function mergeWithFirebase(){

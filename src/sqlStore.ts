@@ -63,8 +63,8 @@ export async function syncIndexedDBToSql() {
 
 export async function syncSqlToIndexedDB() {
   const a = await ensureAlasql();
-  const students: Student[] = a('SELECT * FROM students');
-  const teachers: Teacher[] = a('SELECT * FROM teachers');
+  const students: Student[] = (a('SELECT * FROM students') || []).map(normalizeStudentRow);
+  const teachers: Teacher[] = (a('SELECT * FROM teachers') || []).map(normalizeTeacherRow);
   if (Array.isArray(students) && students.length) {
     await db.students.bulkPut(students.map(s => ({...s, deleted: Boolean(s.deleted)})));
   }
@@ -73,12 +73,43 @@ export async function syncSqlToIndexedDB() {
   }
 }
 
+function normalizeStudentRow(row: Partial<Student> | null | undefined): Student {
+  const record = row ?? {} as Partial<Student>;
+  return {
+    id: String(record.id ?? ''),
+    nisn: String(record.nisn ?? ''),
+    nama: String(record.nama ?? ''),
+    kelas: String(record.kelas ?? ''),
+    kontak: String(record.kontak ?? ''),
+    deviceId: typeof record.deviceId === 'string' ? record.deviceId : undefined,
+    deleted: Boolean(record.deleted),
+    synced: Number(record.synced ?? 0),
+    updatedAt: String(record.updatedAt ?? new Date().toISOString())
+  };
+}
+
+function normalizeTeacherRow(row: Partial<Teacher> | null | undefined): Teacher {
+  const record = row ?? {} as Partial<Teacher>;
+  return {
+    id: String(record.id ?? ''),
+    nama: String(record.nama ?? ''),
+    nik: String(record.nik ?? ''),
+    password: String(record.password ?? ''),
+    role: (record.role === 'guru' || record.role === 'guru bidang' || record.role === 'admin') ? record.role : 'guru',
+    kelas: String(record.kelas ?? 'SEMUA'),
+    deviceId: typeof record.deviceId === 'string' ? record.deviceId : undefined,
+    deleted: Boolean(record.deleted),
+    synced: Number(record.synced ?? 0),
+    updatedAt: String(record.updatedAt ?? new Date().toISOString())
+  };
+}
+
 async function insertOrReplaceStudent(s: Student) {
   const a = await ensureAlasql();
-  // delete existing then insert
-  try { a('DELETE FROM students WHERE id = ?', [s.id]); } catch (e) {}
+  const safe = normalizeStudentRow(s);
+  try { a('DELETE FROM students WHERE id = ?', [safe.id]); } catch (e) {}
   try {
-    a('INSERT INTO students VALUES(?,?,?,?,?,?,?,?,?)', [s.id, s.nisn, s.nama, s.kelas, s.kontak||'', s.deviceId||'', Boolean(s.deleted), Number(s.synced||0), s.updatedAt||new Date().toISOString()]);
+    a('INSERT INTO students VALUES(?,?,?,?,?,?,?,?,?)', [safe.id, safe.nisn, safe.nama, safe.kelas, safe.kontak||'', safe.deviceId||'', Boolean(safe.deleted), Number(safe.synced||0), safe.updatedAt||new Date().toISOString()]);
   } catch (e) { console.warn('SQL insert student failed', e); }
 }
 
@@ -89,9 +120,10 @@ async function removeStudentFromSql(id: string) {
 
 async function insertOrReplaceTeacher(t: Teacher) {
   const a = await ensureAlasql();
-  try { a('DELETE FROM teachers WHERE id = ?', [t.id]); } catch (e) {}
+  const safe = normalizeTeacherRow(t);
+  try { a('DELETE FROM teachers WHERE id = ?', [safe.id]); } catch (e) {}
   try {
-    a('INSERT INTO teachers VALUES(?,?,?,?,?,?,?,?,?,?)', [t.id, t.nama, t.nik||'', t.password||'', t.role||'', t.kelas||'', t.deviceId||'', Boolean(t.deleted), Number(t.synced||0), t.updatedAt||new Date().toISOString()]);
+    a('INSERT INTO teachers VALUES(?,?,?,?,?,?,?,?,?,?)', [safe.id, safe.nama, safe.nik||'', safe.password||'', safe.role||'', safe.kelas||'', safe.deviceId||'', Boolean(safe.deleted), Number(safe.synced||0), safe.updatedAt||new Date().toISOString()]);
   } catch (e) { console.warn('SQL insert teacher failed', e); }
 }
 
@@ -107,11 +139,11 @@ export async function sqlQuery(query: string, params?: any[]) {
 
 export async function getStudentsFromSql(): Promise<Student[]> {
   const a = await ensureAlasql();
-  return a('SELECT * FROM students');
+  return (a('SELECT * FROM students') || []).map(normalizeStudentRow);
 }
 export async function getTeachersFromSql(): Promise<Teacher[]> {
   const a = await ensureAlasql();
-  return a('SELECT * FROM teachers');
+  return (a('SELECT * FROM teachers') || []).map(normalizeTeacherRow);
 }
 
 export default {

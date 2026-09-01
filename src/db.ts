@@ -17,7 +17,7 @@ export async function softDeleteStudent(id:string, confirmDelete = false) {
   }
   const record = await db.students.get(id);
   if (!record) return;
-  await db.students.update(id, { deleted: 1, synced: 0, updatedAt: new Date().toISOString() });
+  await db.students.delete(id);
 }
 export async function softDeleteTeacher(id:string, confirmDelete = false) {
   if (confirmDelete && !window.confirm('Apakah anda yakin ingin menghapus guru tersebut')) {
@@ -25,6 +25,6 @@ export async function softDeleteTeacher(id:string, confirmDelete = false) {
   }
   const record = await db.teachers.get(id);
   if (!record) return;
-  await db.teachers.update(id, { deleted: 1, synced: 0, updatedAt: new Date().toISOString() });
+  await db.teachers.delete(id);
 }
-export async function seed(){if(await db.teachers.count())return;const now=new Date().toISOString();await db.teachers.bulkAdd([{id:'admin-001',nama:'Administrator',nik:'admin',password:'admin123',role:'admin',kelas:'SEMUA',deviceId,deleted:false,synced:0,updatedAt:now},{id:'guru-001',nama:'Guru Kelas 4A',nik:'1987001',password:'123456',role:'guru',kelas:'4A',deviceId,deleted:false,synced:0,updatedAt:now}]);await db.students.bulkAdd([{id:'s-001',nisn:'100001',nama:'Budi Santoso',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now},{id:'s-002',nisn:'100002',nama:'Ani Putri',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now},{id:'s-003',nisn:'100003',nama:'Deni Pratama',kelas:'4B',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now}]);}
+export async function seed(){if(await db.teachers.count())return;const baseTimestamp='2000-01-01T00:00:00.000Z';await db.teachers.bulkAdd([{id:'admin-001',nama:'Administrator',nik:'admin',password:'admin123',role:'admin',kelas:'SEMUA',deviceId,deleted:false,synced:0,updatedAt:baseTimestamp},{id:'guru-001',nama:'Guru Kelas 4A',nik:'1987001',password:'123456',role:'guru',kelas:'4A',deviceId,deleted:false,synced:0,updatedAt:baseTimestamp}]);await db.students.bulkAdd([{id:'s-001',nisn:'100001',nama:'Budi Santoso',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:baseTimestamp},{id:'s-002',nisn:'100002',nama:'Ani Putri',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:baseTimestamp},{id:'s-003',nisn:'100003',nama:'Deni Pratama',kelas:'4B',kontak:'',deviceId,deleted:false,synced:0,updatedAt:baseTimestamp}]);}
