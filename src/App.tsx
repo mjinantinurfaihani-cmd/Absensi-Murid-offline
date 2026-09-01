@@ -6,8 +6,6 @@ import SqlConsole from './components/SqlConsole';
 import{fetchTeacherByNik,loadPublicData,publishInitialData}from'./firebaseStore';
 import BackupControls from './components/BackupControls';
 import{exportAttendanceReport}from'./excel';
-import{sendAttendanceInfobip}from'./infobip';
-type DeliveryResultLike={sent:boolean;skipped?:boolean;messageId?:string;error?:string};
 const deviceId=localStorage.getItem('deviceId')||crypto.randomUUID();localStorage.setItem('deviceId',deviceId);const today=()=>new Date().toLocaleDateString('en-CA');const uid=()=>crypto.randomUUID();const time=()=>new Date().toTimeString().slice(0,8);
 function normalizeUserSession(raw:any): UserSession | null {
   if(!raw||typeof raw!=='object')return null;
@@ -450,9 +448,7 @@ function Scan({user,showToast}:any){
       await db.attendance.add(attendance);
       scannerRef.current?.triggerGlitch?.();
       if(mode!=='MUTE')playGlitchSound();
-      const delivery=await sendAttendanceInfobip(student,attendance,'hadir',user);
-      if(!delivery.skipped){showToast(delivery.sent?'success':'error',delivery.sent?`Notifikasi hadir ${student.nama} berhasil dikirim`:`Notifikasi hadir ${student.nama} gagal: ${delivery.error}`);if(delivery.sent)showToast('success',`${student.nama} tercatat ${attendance.status.toLowerCase()}; notifikasi berhasil dikirim`)}
-      if(!delivery.skipped)notify(`${student.nama}, kelas ${student.kelas}, ${attendance.status.toLowerCase()}`);
+      notify(`${student.nama}, kelas ${student.kelas}, ${attendance.status.toLowerCase()}`);
       await load();
     }catch(error:unknown){
       const message=error instanceof Error?error.message:'QR tidak valid';
@@ -480,10 +476,7 @@ function Scan({user,showToast}:any){
         if(!existing)records.push({id:uid(),studentId:student.id,tanggal:activeDate,jamMasuk:manualIn||time(),jamPulang:'',ownerId:user.id,ownerRole:user.role,status:manualIn>'07:00'?'TERLAMBAT':'HADIR',deviceId,deleted:false,updatedAt:now,synced:0});
       }
       if(records.length)await db.attendance.bulkAdd(records);
-      const deliveryResults:DeliveryResultLike[]=await Promise.all(records.map(async record=>{const student=students.find(item=>item.id===record.studentId);return student?sendAttendanceInfobip(student,record,'hadir',user):{sent:false,skipped:false,error:'Data siswa tidak ditemukan'}}));
-      const skippedDeliveries=deliveryResults.filter(result=>Boolean(result.skipped)).length;
-      const failedDeliveries=deliveryResults.filter(result=>!result.sent&&!result.skipped).length;
-      if(skippedDeliveries&&records.length===skippedDeliveries){/* notifikasi WhatsApp belum dikonfigurasi: abaikan tanpa toast */}else if(failedDeliveries)showToast('error',`${records.length} siswa ditandai hadir, ${failedDeliveries} notifikasi gagal dikirim`);else if(records.length)showToast('success',`${records.length} siswa ditandai hadir dan notifikasinya berhasil dikirim`);else showToast('info','Tidak ada siswa baru yang ditandai hadir');await load();
+      if(records.length)showToast('success',`${records.length} siswa ditandai hadir`);else showToast('info','Tidak ada siswa baru yang ditandai hadir');await load();
     }catch(error){showToast('error',error instanceof Error?error.message:'Gagal menandai kehadiran')}finally{setBusy(false)}
   }
 
@@ -498,11 +491,7 @@ function Scan({user,showToast}:any){
       const updates=records.filter(record=>ids.has(record.studentId)&&ownsAttendance(record,user)&&!record.jamPulang);
       const departureTime=manualOut||time();
       await db.transaction('rw',db.attendance,async()=>{for(const record of updates)await db.attendance.update(record.id,{jamPulang:departureTime,updatedAt:new Date().toISOString(),synced:0})});
-      const allStudents=await db.students.toArray();
-      const deliveryResults:DeliveryResultLike[]=await Promise.all(updates.map(async record=>{const student=allStudents.find(item=>item.id===record.studentId);return student?sendAttendanceInfobip(student,{...record,jamPulang:departureTime},'pulang',user):{sent:false,skipped:false,error:'Data siswa tidak ditemukan'}}));
-      const skippedDeliveries=deliveryResults.filter(result=>Boolean(result.skipped)).length;
-      const failedDeliveries=deliveryResults.filter(result=>!result.sent&&!result.skipped).length;
-      if(skippedDeliveries&&updates.length===skippedDeliveries){/* notifikasi WhatsApp belum dikonfigurasi: abaikan tanpa toast */}else if(failedDeliveries)showToast('error',`${updates.length} siswa dipulangkan, ${failedDeliveries} notifikasi gagal dikirim`);else if(updates.length)showToast('success',`${updates.length} siswa dipulangkan dan notifikasinya berhasil dikirim`);else showToast('info','Tidak ada siswa yang perlu dipulangkan');await load();
+      if(updates.length)showToast('success',`${updates.length} siswa dipulangkan`);else showToast('info','Tidak ada siswa yang perlu dipulangkan');await load();
     }catch(error){showToast('error',error instanceof Error?error.message:'Gagal memproses jam pulang')}finally{setBusy(false)}
   }
 
@@ -513,10 +502,6 @@ function Scan({user,showToast}:any){
       : {...row,id:uid(),status:automaticStatus,ownerId:user.id,ownerRole:user.role,deviceId};
     if(ownsAttendance(row,user))await db.attendance.update(row.id,{status:automaticStatus,ownerId:user.id,ownerRole:user.role,updatedAt:new Date().toISOString(),synced:0});
     else await db.attendance.add({...attendance,updatedAt:new Date().toISOString(),synced:0});
-    if(automaticStatus==='HADIR'||automaticStatus==='TERLAMBAT'){
-      const student=await db.students.get(row.studentId);
-      if(student){const delivery=await sendAttendanceInfobip(student,attendance,'hadir',user);if(!delivery.skipped)showToast(delivery.sent?'success':'error',delivery.sent?`Notifikasi hadir ${student.nama} berhasil dikirim`:`Notifikasi hadir ${student.nama} gagal: ${delivery.error}`)}
-    }
     await load();
   }
 
