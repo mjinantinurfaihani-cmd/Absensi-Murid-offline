@@ -27,23 +27,17 @@ service cloud.firestore {
     function isNewer(newDoc, oldDoc) {
       // Compare timestamps: newer timestamp wins
       // If timestamps equal, version tie-breaker: >= comparison
-      let newTs = timestamp.value(newDoc.updatedAt);
-      let oldTs = timestamp.value(oldDoc.updatedAt);
-      
-      return newTs > oldTs || 
-             (newTs == oldTs && newDoc.get('__version', 0) >= oldDoc.get('__version', 0));
+      return timestamp.value(newDoc.updatedAt) > timestamp.value(oldDoc.updatedAt) || 
+             (timestamp.value(newDoc.updatedAt) == timestamp.value(oldDoc.updatedAt) && 
+              newDoc.get('__version', 0) >= oldDoc.get('__version', 0));
     }
     
     function canModifyDeleted(newDoc, oldDoc) {
       // Soft-delete permanence: once deleted=1, only strictly newer timestamps can change state
-      let oldDeleted = oldDoc.deleted == true || oldDoc.deleted == 1;
-      let newDeleted = newDoc.deleted == true || newDoc.deleted == 1;
-      
-      if (oldDeleted && !newDeleted) {
-        // Attempting to undelete: only allow if timestamp is strictly newer
-        return timestamp.value(newDoc.updatedAt) > timestamp.value(oldDoc.updatedAt);
-      }
-      return true;
+      // If already deleted and trying to undelete, only allow if timestamp is strictly newer
+      return !((oldDoc.deleted == true || oldDoc.deleted == 1) && 
+               !(newDoc.deleted == true || newDoc.deleted == 1)) ||
+             timestamp.value(newDoc.updatedAt) > timestamp.value(oldDoc.updatedAt);
     }
     
     function isRateLimited(userId, maxWrites, windowSeconds) {
@@ -60,11 +54,10 @@ service cloud.firestore {
       
       // Required fields: id, nik, nama (or legacy namaLengkap), role, kelas, updatedAt, deleted
       function isValidTeacher(doc) {
-        let hasName = (doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0);
         return doc.keys().hasAll(['id', 'nik', 'role', 'kelas', 'updatedAt', 'deleted']) &&
                isValidUUID(doc.id) &&
                doc.nik is string && doc.nik.size > 0 &&
-               hasName &&
+               ((doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0)) &&
                doc.role is string && doc.role in ['admin', 'guru', 'guru bidang'] &&
                doc.kelas is string && doc.kelas.size > 0 &&
                isValidTimestamp(doc.updatedAt) &&
@@ -95,11 +88,10 @@ service cloud.firestore {
       
       // Required fields: id, nisn, nama (or legacy namaLengkap), kelas, updatedAt, deleted
       function isValidStudent(doc) {
-        let hasName = (doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0);
         return doc.keys().hasAll(['id', 'nisn', 'kelas', 'updatedAt', 'deleted']) &&
                isValidUUID(doc.id) &&
                doc.nisn is string && doc.nisn.size > 0 &&
-               hasName &&
+               ((doc.nama is string && doc.nama.size > 0) || (doc.namaLengkap is string && doc.namaLengkap.size > 0)) &&
                doc.kelas is string && doc.kelas.size > 0 &&
                isValidTimestamp(doc.updatedAt) &&
                (doc.deleted is bool || doc.deleted is number);
@@ -128,12 +120,11 @@ service cloud.firestore {
       
       // Required fields: id, studentId, tanggal, status, updatedAt, deleted
       function isValidAttendance(doc) {
-        let validStatus = ['HADIR', 'SAKIT', 'IZIN', 'ALPA', 'TERLAMBAT'];
         return doc.keys().hasAll(['id', 'studentId', 'tanggal', 'status', 'updatedAt', 'deleted']) &&
                isValidUUID(doc.id) &&
                doc.studentId is string && doc.studentId.size > 0 &&
                doc.tanggal is string && doc.tanggal.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
-               doc.status is string && doc.status in validStatus &&
+               doc.status is string && doc.status in ['HADIR', 'SAKIT', 'IZIN', 'ALPA', 'TERLAMBAT'] &&
                isValidTimestamp(doc.updatedAt) &&
                (doc.deleted is bool || doc.deleted is number);
       }

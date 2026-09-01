@@ -158,6 +158,20 @@ export async function removePublicTeacher(id: string) {
   await deleteDoc(doc(firestore, 'teachers', id));
 }
 
+export async function removePublicAttendance(id: string) {
+  await deleteDoc(doc(firestore, 'attendance', id));
+}
+
+export async function removePublicStudentAttendanceTrace(studentId: string) {
+  const snapshot = await getDocs(query(collection(firestore, 'attendance'), where('studentId', '==', studentId)));
+  await Promise.all(snapshot.docs.map((docSnapshot) => deleteDoc(doc(firestore, 'attendance', docSnapshot.id))));
+}
+
+export async function removePublicTeacherAttendanceTrace(teacherId: string) {
+  const snapshot = await getDocs(query(collection(firestore, 'attendance'), where('ownerId', '==', teacherId)));
+  await Promise.all(snapshot.docs.map((docSnapshot) => deleteDoc(doc(firestore, 'attendance', docSnapshot.id))));
+}
+
 export async function publishInitialData(students: Student[], teachers: Teacher[]) {
   await Promise.all([
     ...students.map(publishStudent),
