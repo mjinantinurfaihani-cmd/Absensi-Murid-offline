@@ -14,6 +14,7 @@ type Props = {
 };
 
 const safeText = (value: unknown) => String(value ?? '').trim();
+const normalizeClassList = (value: unknown): string[] => String(value ?? '').split(',').map((item) => item.trim()).filter(Boolean);
 const compareText = (left: unknown, right: unknown) => safeText(left).localeCompare(safeText(right), 'id', { numeric: true });
 
 export default function QrCardsPanel({ user, showToast }: Props) {
@@ -27,7 +28,7 @@ export default function QrCardsPanel({ user, showToast }: Props) {
   const [kelas, setKelas] = useState('ALL');
   const assignedClasses = user.role === 'admin'
     ? null
-    : user.kelas.split(',').map((value) => value.trim()).filter(Boolean);
+    : normalizeClassList(user.kelas);
 
   useEffect(() => {
     db.students
@@ -53,7 +54,7 @@ export default function QrCardsPanel({ user, showToast }: Props) {
     setPreviewTitle(title);
   }
 
-  const classes = [...new Set(students.map((student) => student.kelas))].sort();
+  const classes = [...new Set(students.flatMap((student) => normalizeClassList(student.kelas)))].sort();
   const visibleStudents = students.filter((student) =>
     (kelas === 'ALL' || student.kelas === kelas) &&
     (!query || `${student.nama} ${student.nisn}`.toLowerCase().includes(query.toLowerCase()))

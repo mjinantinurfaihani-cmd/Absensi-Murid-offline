@@ -3,25 +3,25 @@
     "id": "admin-001",
     "nama": "Administrator",
     "nik": "admin",
-    "password": "Cepi1978",
+    "password": "admin123",
     "role": "admin",
     "kelas": "SEMUA",
-    "deviceId": "56c8e206-9c72-40f2-bfb6-25f3a14fb026",
+    "deviceId": "7aeaa8f2-6d0d-41d2-bb19-d350293f6fba",
     "deleted": false,
     "synced": 0,
-    "updatedAt": "2026-08-29T09:17:10.950Z"
+    "updatedAt": "2026-09-01T10:02:02.132Z"
   },
   {
     "id": "guru-001",
     "nama": "Guru Kelas 4A",
     "nik": "1987001",
+    "password": "123456",
     "role": "guru",
     "kelas": "4A",
-    "password": "123456",
-    "deviceId": "d1d5f16a-bace-4459-a3f5-7832b5815b81",
+    "deviceId": "7aeaa8f2-6d0d-41d2-bb19-d350293f6fba",
     "deleted": 1,
-    "updatedAt": "2026-09-01T09:36:41.670Z",
-    "synced": 0
+    "synced": 0,
+    "updatedAt": "2026-09-01T10:02:02.132Z"
   },
   {
     "id": "27e09f9f-de9b-4e28-a6e3-f46eefce4043",
@@ -234,11 +234,15 @@
   },
   {
     "id": "teacher-001",
+    "nama": "Budi Hartono",
     "nik": "1234567890123456",
-    "namaLengkap": "Budi Hartono",
-    "email": "budi@school.id",
+    "role": "guru",
+    "kelas": "SEMUA",
+    "password": "",
+    "deviceId": "7ee404dc-e707-4117-88ad-912f49d1670a",
+    "deleted": 1,
     "updatedAt": "2025-01-09T10:00:00.000Z",
-    "deleted": 0
+    "synced": 0
   },
   {
     "id": "77aaf4dc-e4ef-47eb-9d5b-e9937e0cf576",
@@ -247,22 +251,22 @@
     "role": "guru",
     "kelas": "6C",
     "password": "sdfsfsfsdfsdfsdfds",
+    "deviceId": "7ee404dc-e707-4117-88ad-912f49d1670a",
     "deleted": 1,
-    "synced": 0,
     "updatedAt": "2026-09-01T09:28:33.522Z",
-    "deviceId": "7ee404dc-e707-4117-88ad-912f49d1670a"
+    "synced": 0
   },
   {
-    "deleted": 1,
-    "deviceId": "0fd825c6-60a8-4f8c-a412-e64948b8d9be",
     "id": "7fb0af34-c48e-4a8d-b8c8-3c81978c0e3a",
-    "synced": 0,
-    "role": "guru",
-    "kelas": "4B",
     "nama": "Contoh Guru",
     "nik": "1987002",
+    "role": "guru",
+    "kelas": "4B",
     "password": "ubah-password",
-    "updatedAt": "2026-08-28T09:15:40.136Z"
+    "deviceId": "0fd825c6-60a8-4f8c-a412-e64948b8d9be",
+    "deleted": 1,
+    "updatedAt": "2026-08-28T09:15:40.136Z",
+    "synced": 0
   },
   {
     "deviceId": "745b4c3c-339a-4a0e-9d90-87b225dc170f",
@@ -286,6 +290,18 @@
     "deviceId": "eea77b7a-dfd2-4e5d-9fa7-e29d4d32583e",
     "deleted": 1,
     "updatedAt": "2026-09-01T08:33:24.416Z",
+    "synced": 0
+  },
+  {
+    "id": "12a4055e-26f7-4d73-a43c-9ce9da74a2d9",
+    "nama": "Cecep Syaefudin",
+    "nik": "3273281409820002",
+    "role": "guru bidang",
+    "kelas": "3B, 3C, 3D, 4A, 4B, 4C",
+    "password": "Guru123456",
+    "deviceId": "7ee404dc-e707-4117-88ad-912f49d1670a",
+    "deleted": 1,
+    "updatedAt": "2026-09-01T09:49:47.633Z",
     "synced": 0
   }
 ]

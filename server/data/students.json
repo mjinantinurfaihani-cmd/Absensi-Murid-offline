@@ -14,5 +14,38 @@
     "nisn": "99999",
     "namaLengkap": "Valid Student",
     "updatedAt": "2025-01-09T10:00:00.000Z"
+  },
+  {
+    "id": "s-001",
+    "nisn": "100001",
+    "nama": "Budi Santoso",
+    "kelas": "4A",
+    "kontak": "",
+    "deviceId": "7aeaa8f2-6d0d-41d2-bb19-d350293f6fba",
+    "deleted": false,
+    "synced": 0,
+    "updatedAt": "2026-09-01T10:02:02.132Z"
+  },
+  {
+    "id": "s-002",
+    "nisn": "100002",
+    "nama": "Ani Putri",
+    "kelas": "4A",
+    "kontak": "",
+    "deviceId": "7aeaa8f2-6d0d-41d2-bb19-d350293f6fba",
+    "deleted": false,
+    "synced": 0,
+    "updatedAt": "2026-09-01T10:02:02.132Z"
+  },
+  {
+    "id": "s-003",
+    "nisn": "100003",
+    "nama": "Deni Pratama",
+    "kelas": "4B",
+    "kontak": "",
+    "deviceId": "7aeaa8f2-6d0d-41d2-bb19-d350293f6fba",
+    "deleted": false,
+    "synced": 0,
+    "updatedAt": "2026-09-01T10:02:02.132Z"
   }
 ]
