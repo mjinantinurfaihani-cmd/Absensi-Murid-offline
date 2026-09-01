@@ -368,6 +368,7 @@ function Scan({user,showToast}:any){
   const[busy,setBusy]=useState(false);
   const last=useRef({text:'',at:0});
   const scannerRef=useRef<any>(null);
+  const[conflictNotifications,setConflictNotifications]=useState<Array<{id:string;nama:string;nisn:string;kelas:string;studentStatus:string;classStatus:string}>>([]);
 
   async function load(){
     const activeDate=autoDate?today():selectedDate;
@@ -400,6 +401,22 @@ function Scan({user,showToast}:any){
 
   useEffect(()=>{if(user.role!=='admin'&&teacherFilter==='ALL'){setTeacherFilter(user.id)}},[user.id,user.role]);
   useEffect(()=>{void load()},[kelas,q,autoDate,selectedDate,teacherFilter]);
+
+  useEffect(()=>{
+    if(user.role!=='guru bidang')return;
+    const newConflicts:Array<{id:string;nama:string;nisn:string;kelas:string;studentStatus:string;classStatus:string}>=[];
+    rows.forEach(row=>{
+      if(row.comparisonStatus&&row.status!==row.comparisonStatus){
+        newConflicts.push({id:row.id,nama:row.nama,nisn:row.nisn,kelas:row.kelas,studentStatus:attendanceStatusLabel(row.status),classStatus:attendanceStatusLabel(row.comparisonStatus)});
+      }
+    });
+    const existingIds=new Set(conflictNotifications.map(n=>n.id));
+    const newIds=new Set(newConflicts.map(c=>c.id));
+    const toAdd=newConflicts.filter(c=>!existingIds.has(c.id));
+    if(toAdd.length>0){
+      setConflictNotifications(prev=>[...prev,...toAdd]);
+    }
+  },[rows,user.role,conflictNotifications]);
 
   async function scan(text:string){
     if(busy||(last.current.text===text&&Date.now()-last.current.at<3000))return;
@@ -579,6 +596,22 @@ function Scan({user,showToast}:any){
       </table>
       {!rows.length&&<p className="empty">Belum ada riwayat scan.</p>}
     </section>
+    <div className="conflict-notifications">
+      {conflictNotifications.map(conflict=>(
+        <div key={conflict.id} className="conflict-notification alert">
+          <div className="notification-content">
+            <strong>⚠️ Status Kehadiran Tidak Sama</strong>
+            <p>Atas nama <strong>{conflict.nama}</strong> ({conflict.nisn}), status kehadiran tidak sama antara guru kelas dan guru bidang:</p>
+            <p style={{margin:'.3rem 0 .5rem'}}>
+              <span>Guru bidang: <strong>{conflict.studentStatus}</strong></span>
+              <span style={{marginLeft:'1rem'}}>Guru kelas: <strong>{conflict.classStatus}</strong></span>
+            </p>
+            <p style={{fontSize:'.85rem',color:'#666'}}>Mohon untuk berkoordinasi dan memperbaikinya.</p>
+          </div>
+          <button className="confirm-btn" onClick={()=>{setConflictNotifications(prev=>prev.filter(n=>n.id!==conflict.id))}} title="Konfirmasi">✓</button>
+        </div>
+      ))}
+    </div>
   </>;
 }
 
