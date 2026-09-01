@@ -372,13 +372,19 @@ app.post('/api/infobip/delivery-reports', async (request, response) => {
   const webhookSecret = process.env.INFOBIP_WEBHOOK_SECRET;
   const headerName = process.env.INFOBIP_WEBHOOK_HEADER || 'X-Infobip-Signature';
   if (webhookSecret) {
+    const signature = String(request.get(headerName) || '').trim();
+    const rawBody = request.rawBody || '';
     try {
-      const sig = String(request.get(headerName) || '');
       const crypto = await import('node:crypto');
-      const hmacBase64 = crypto.createHmac('sha256', webhookSecret).update(request.rawBody || '').digest('base64');
-      const hmacHex = crypto.createHmac('sha256', webhookSecret).update(request.rawBody || '').digest('hex');
-      if (!sig || (sig !== hmacBase64 && sig !== hmacHex)) return response.status(403).json({ ok: false, error: 'Invalid webhook signature' });
-    } catch (err) { return response.status(500).json({ ok: false, error: 'Webhook verification error' }); }
+      const hmacBase64 = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('base64');
+      const hmacHex = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+      const normalizedSignature = signature.replace(/^sha256=/i, '').trim();
+      if (!signature || (normalizedSignature !== hmacBase64 && normalizedSignature !== hmacHex && signature !== hmacBase64 && signature !== hmacHex)) {
+        return response.status(403).json({ ok: false, error: 'Invalid webhook signature' });
+      }
+    } catch (err) {
+      return response.status(500).json({ ok: false, error: 'Webhook verification error' });
+    }
   }
   const reports = Array.isArray(request.body?.results) ? request.body.results : [];
   const stored = readData('infobip-delivery-reports');

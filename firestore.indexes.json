@@ -1,51 +1,142 @@
 {
-  // Example (Standard Edition):
-  //
-  // "indexes": [
-  //   {
-  //     "collectionGroup": "widgets",
-  //     "queryScope": "COLLECTION",
-  //     "fields": [
-  //       { "fieldPath": "foo", "arrayConfig": "CONTAINS" },
-  //       { "fieldPath": "bar", "mode": "DESCENDING" }
-  //     ]
-  //   },
-  //
-  //  "fieldOverrides": [
-  //    {
-  //      "collectionGroup": "widgets",
-  //      "fieldPath": "baz",
-  //      "indexes": [
-  //        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-  //      ]
-  //    },
-  //   ]
-  // ]
-  //
-  // Example (Enterprise Edition):
-  //
-  // "indexes": [
-  //   {
-  //     "collectionGroup": "reviews",
-  //     "queryScope": "COLLECTION_GROUP",
-  //     "apiScope": "MONGODB_COMPATIBLE_API",
-  //     "density": "DENSE",
-  //     "multikey": false,
-  //     "fields": [
-  //       { "fieldPath": "baz", "mode": "ASCENDING" }
-  //     ]
-  //   },
-  //   {
-  //     "collectionGroup": "items",
-  //     "queryScope": "COLLECTION_GROUP",
-  //     "apiScope": "MONGODB_COMPATIBLE_API",
-  //     "density": "SPARSE_ANY",
-  //     "multikey": true,
-  //     "fields": [
-  //       { "fieldPath": "baz", "mode": "ASCENDING" }
-  //     ]
-  //   },
-  // ]
-  "indexes": [],
-  "fieldOverrides": []
+  // ============================================
+  // PHASE 3D: Firebase Indexes for Performance
+  // ============================================
+  // Indexes optimize common query patterns and
+  // improve validation rule execution speed
+  // ============================================
+  
+  "indexes": [
+    // ============================================
+    // TEACHERS Collection Indexes
+    // ============================================
+    {
+      "collectionGroup": "teachers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "nik", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "teachers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "role", "mode": "ASCENDING" },
+        { "fieldPath": "kelas", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "teachers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "updatedAt", "mode": "DESCENDING" }
+      ]
+    },
+    
+    // ============================================
+    // STUDENTS Collection Indexes
+    // ============================================
+    {
+      "collectionGroup": "students",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "nisn", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "students",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "kelas", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "students",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "updatedAt", "mode": "DESCENDING" }
+      ]
+    },
+    
+    // ============================================
+    // ATTENDANCE Collection Indexes
+    // ============================================
+    {
+      "collectionGroup": "attendance",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId", "mode": "ASCENDING" },
+        { "fieldPath": "tanggal", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tanggal", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "tanggal", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "updatedAt", "mode": "DESCENDING" }
+      ]
+    },
+    
+    // ============================================
+    // CONFLICTS Collection Indexes
+    // ============================================
+    {
+      "collectionGroup": "attendance-conflicts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId", "mode": "ASCENDING" },
+        { "fieldPath": "tanggal", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance-conflicts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "resolved", "mode": "ASCENDING" }
+      ]
+    }
+  ],
+  
+  "fieldOverrides": [
+    // ============================================
+    // Field Configuration Overrides
+    // ============================================
+    {
+      "collectionGroup": "teachers",
+      "fieldPath": "deleted",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" }
+      ]
+    },
+    {
+      "collectionGroup": "students",
+      "fieldPath": "deleted",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" }
+      ]
+    },
+    {
+      "collectionGroup": "attendance",
+      "fieldPath": "deleted",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" }
+      ]
+    }
+  ]
+}
 }

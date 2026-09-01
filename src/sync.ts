@@ -9,8 +9,13 @@ function resolvedApiBase(){
 
 const requestOptions=()=>({signal:AbortSignal.timeout(5000)});
 
+function toTimestamp(value?:string){
+	const parsed=Date.parse(String(value||''));
+	return Number.isFinite(parsed)?parsed:0;
+}
+
 function isNewer(left:{updatedAt?:string},right:{updatedAt?:string}){
-	return String(left.updatedAt||'')>=String(right.updatedAt||'');
+	return toTimestamp(left.updatedAt)>=toTimestamp(right.updatedAt);
 }
 
 async function isServerAvailable(){
@@ -32,7 +37,8 @@ function uniqueRows(name:string,rows:any[]){
 		const current=byKey.get(value);
 		if(!current||isNewer(row,current))byKey.set(value,row);
 	}
-	return [...byKey.values()];
+	// Filter: exclude soft-deleted records (deleted=1)
+	return [...byKey.values()].filter(row=>row.deleted!==1);
 }
 
 async function syncTable(name:string,table:any){
@@ -76,7 +82,14 @@ function mergeRows<T extends SyncRow>(local:T[],remote:T[]){
 		const current=merged.get(row.id);
 		if(!current||isNewer(row,current))merged.set(row.id,row);
 	}
-	return [...merged.values()];
+	// Respect soft-delete: if deleted=1 with newer timestamp, keep deleted; cannot resurrect with older timestamps
+	const result=[...merged.values()];
+	return result.filter(row=>{
+		if(row.deleted===1)return true;// Keep for audit trail
+		const deletedVersion=result.find(r=>r.id===row.id&&r.deleted===1);
+		if(!deletedVersion)return true;
+		return toTimestamp(row.updatedAt)>toTimestamp(deletedVersion.updatedAt);
+	});
 }
 
 async function mergeWithFirebase(){
@@ -138,8 +151,12 @@ export async function syncAll(){
 	const merged=await mergeWithFirebase();
 	if(serverAvailable){
 		for(const [name,rows] of [['teachers',merged.teachers],['students',merged.students],['attendance',merged.attendance]] as const){
-			const response=await fetch(`${resolvedApiBase()}/api/sync/${name}`,{...requestOptions(),method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rows)});
-			if(!response.ok)throw new Error(`Pengiriman ${name} ke server gagal`);
+			// Filter soft-deleted before sending to server (only send active records)
+			const nonDeleted=rows.filter(r=>r.deleted!==1);
+			if(nonDeleted.length>0){
+				const response=await fetch(`${resolvedApiBase()}/api/sync/${name}`,{...requestOptions(),method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(nonDeleted)});
+				if(!response.ok)throw new Error(`Pengiriman ${name} ke server gagal`);
+			}
 		}
 	}
 	localStorage.setItem('lastSync',new Date().toISOString());

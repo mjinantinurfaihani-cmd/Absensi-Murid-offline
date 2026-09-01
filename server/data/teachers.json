@@ -231,5 +231,13 @@
     "deleted": 0,
     "synced": 0,
     "updatedAt": "2026-08-22T16:29:28.344Z"
+  },
+  {
+    "id": "teacher-001",
+    "nik": "1234567890123456",
+    "namaLengkap": "Budi Hartono",
+    "email": "budi@school.id",
+    "updatedAt": "2025-01-09T10:00:00.000Z",
+    "deleted": 0
   }
 ]

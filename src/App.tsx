@@ -1,6 +1,6 @@
 function StudentsPage({user,showToast}:any){const[refreshKey,setRefreshKey]=useState(0);return <><StudentList key={refreshKey} user={user} showToast={showToast}/>{user.role==='admin'&&<div className="heading-actions"><button className="danger" onClick={async()=>{await deleteAllStudents(showToast);setRefreshKey(value=>value+1)}}>Hapus Semua Data Siswa</button></div>}</>}
 async function deleteAllStudents(showToast:any){if(!window.confirm('Apakah anda yakin ingin menghapus semua data siswa?'))return;const students=await db.students.filter(student=>!student.deleted).toArray();if(!students.length){showToast('info','Tidak ada data siswa untuk dihapus');return}await db.students.bulkDelete(students.map(student=>student.id));showToast('success','Semua data siswa berhasil dihapus')}
-import{useEffect,useMemo,useRef,useState}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify}from'./notify';import{confirmAttendanceConflict,syncAdminDirectoryData,syncAll}from'./sync';import{downloadTemplate,exportAttendanceSnapshot,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
+import{useEffect,useMemo,useRef,useState,useImperativeHandle,forwardRef}from'react';import{BrowserMultiFormatReader}from'@zxing/browser';import*as XLSX from'xlsx';import{saveAs}from'file-saver';import{db,seed,softDeleteStudent,softDeleteTeacher}from'./db';import type{Attendance,AttendanceConflict,SoundMode,Student,Teacher,UserSession}from'./types';import { getStudentsFromSql, getTeachersFromSql, sqlQuery, syncSqlToIndexedDB } from './sqlStore';import{AnimatedToast,PresetToolbar,useToast,type PresetId}from'./toast';import{notify,playGlitchSound}from'./notify';import{confirmAttendanceConflict,syncAdminDirectoryData,syncAll}from'./sync';import{downloadTemplate,exportAttendanceSnapshot,exportStudents,exportTeachers,importStudents,importTeachers}from'./excel';import QrCardsPanel from './components/QrCardsPanel';
 import SqlConsole from './components/SqlConsole';
 import InfobipMetrics from './components/InfobipMetrics';
 import{loadPublicData,publishInitialData}from'./firebaseStore';
@@ -179,12 +179,14 @@ function Shell({user,logout,toast,showToast,closeToast,conflictDebugEnabled,setC
     showToast={showToast}
   />
 )} {page==='pengaturan'&&<Settings showToast={showToast} user={user}/>}</main>{toast&&<AnimatedToast toast={toast} onClose={closeToast}/>}</>}
-function Scanner({onScan}:{onScan:(s:string)=>void}){
+function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
   type PermissionStateEx='granted'|'denied'|'prompt'|'unsupported'|'insecure';
   const videoRef=useRef<HTMLVideoElement>(null);
   const panelRef=useRef<HTMLDivElement>(null);
   const controlsRef=useRef<any>(null);
   const mountedRef=useRef(true);
+  const cameraViewRef=useRef<HTMLDivElement>(null);
+  const glitchTimeoutRef=useRef<NodeJS.Timeout|null>(null);
   const[devices,setDevices]=useState<MediaDeviceInfo[]>([]);
   const[selectedDevice,setSelectedDevice]=useState(()=>localStorage.getItem('cameraDevice')||'');
   const[permission,setPermission]=useState<PermissionStateEx>(()=>window.isSecureContext?'prompt':'insecure');
@@ -192,6 +194,7 @@ function Scanner({onScan}:{onScan:(s:string)=>void}){
   const[loading,setLoading]=useState(false);
   const[status,setStatus]=useState('Periksa izin kamera untuk mulai memindai.');
   const[error,setError]=useState('');
+  const[glitchActive,setGlitchActive]=useState(false);
 
   function stopTracks(){
     controlsRef.current?.stop?.();
@@ -296,10 +299,23 @@ function Scanner({onScan}:{onScan:(s:string)=>void}){
     }finally{setLoading(false)}
   }
 
+  function triggerGlitch(){
+    if(!cameraViewRef.current)return;
+    cameraViewRef.current.classList.add('glitch-trigger');
+    setGlitchActive(true);
+    if(glitchTimeoutRef.current)clearTimeout(glitchTimeoutRef.current);
+    glitchTimeoutRef.current=setTimeout(()=>{
+      if(cameraViewRef.current)cameraViewRef.current.classList.remove('glitch-trigger');
+      setGlitchActive(false);
+    },250);
+  }
+
   async function changeCamera(id:string){stop();setSelectedDevice(id);localStorage.setItem('cameraDevice',id);if(id&&permission==='granted')await start(id)}
   async function refresh(){stop();setError('');if(permission!=='granted'){await requestCameraPermission();return}try{const chosen=await enumerate(selectedDevice);setStatus(chosen?'Daftar kamera diperbarui.':'Kamera tidak ditemukan.')}catch(e:any){setError(e?.message||'Gagal memperbarui kamera.')}}
   async function fullscreen(){try{await panelRef.current?.requestFullscreen?.()}catch{setError('Mode layar penuh tidak dapat diaktifkan.')}}
   function reloadForPermission(){window.location.reload()}
+
+  useImperativeHandle(ref,()=>({triggerGlitch}),[]);
 
   useEffect(()=>{
     mountedRef.current=true;
@@ -324,11 +340,12 @@ function Scanner({onScan}:{onScan:(s:string)=>void}){
       <button disabled={loading||permission!=='granted'} onClick={refresh}>↻ Refresh Perangkat</button>
       <button onClick={fullscreen}>⛶ Layar Penuh</button>
     </div>
-    <div className="camera-view"><video ref={videoRef} autoPlay muted playsInline/><div className="scan-frame" aria-hidden="true"><span/><span/><span/><span/></div>{!scanning&&!loading&&<div className="camera-placeholder">{permission==='granted'?<>Tekan <b>Mulai Scan</b> untuk mengaktifkan kamera</>:<>Tekan <b>Izinkan Kamera</b> terlebih dahulu</>}</div>}</div>
+    <div ref={cameraViewRef} className="camera-view"><video ref={videoRef} autoPlay muted playsInline/><div className="scan-frame" aria-hidden="true"><span/><span/><span/><span/></div>{!scanning&&!loading&&<div className="camera-placeholder">{permission==='granted'?<>Tekan <b>Mulai Scan</b> untuk mengaktifkan kamera</>:<>Tekan <b>Izinkan Kamera</b> terlebih dahulu</>}</div>}{glitchActive&&<><div className="glitch-overlay"/><div className="glitch-box"><div className="glitch-text">✓ SUKSES</div></div></>}</div>
     <div className={`camera-status ${scanning?'active':error?'error':''}`}><i/> {status}</div>
     {error&&<div className="camera-error"><b>Kamera tidak siap.</b><span>{error}</span></div>}
   </div>
 }
+const Scanner=forwardRef(ScannerBase);
 interface ScanHistoryRow extends Attendance {
   nama: string;
   nisn: string;
@@ -350,6 +367,7 @@ function Scan({user,showToast}:any){
   const[manualOut,setManualOut]=useState('13:00');
   const[busy,setBusy]=useState(false);
   const last=useRef({text:'',at:0});
+  const scannerRef=useRef<any>(null);
 
   async function load(){
     const activeDate=autoDate?today():selectedDate;
@@ -402,6 +420,8 @@ function Scan({user,showToast}:any){
         ownerId:user.id,ownerRole:user.role,status:terlambat?'TERLAMBAT':'HADIR',deviceId,deleted:false,updatedAt:now.toISOString(),synced:0
       };
       await db.attendance.add(attendance);
+      scannerRef.current?.triggerGlitch?.();
+      if(mode!=='MUTE')playGlitchSound();
       const delivery=await sendAttendanceInfobip(student,attendance,'hadir',user);
       if(!delivery.skipped){showToast(delivery.sent?'success':'error',delivery.sent?`Notifikasi hadir ${student.nama} berhasil dikirim`:`Notifikasi hadir ${student.nama} gagal: ${delivery.error}`);if(delivery.sent)showToast('success',`${student.nama} tercatat ${attendance.status.toLowerCase()}; notifikasi berhasil dikirim`)}
       if(!delivery.skipped)notify(`${student.nama}, kelas ${student.kelas}, ${attendance.status.toLowerCase()}`);
@@ -516,7 +536,7 @@ function Scan({user,showToast}:any){
       <button disabled={busy} onClick={dismissAll}>Pulangkan semua siswa</button>
     </section>
     <h1>Scan QR Absensi</h1>
-    <Scanner onScan={scan}/>
+    <Scanner ref={scannerRef} onScan={scan}/>
     <div className="stats">
       <article><span>Hadir</span><b>{hadir}</b></article>
       <article><span>Terlambat</span><b>{rows.length-hadir}</b></article>

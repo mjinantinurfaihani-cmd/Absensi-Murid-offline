@@ -2,15 +2,17 @@ import { initializeApp } from 'firebase/app';
 import { collection, deleteDoc, doc, getDocs, getFirestore, setDoc } from 'firebase/firestore';
 import type { Attendance, Student, Teacher } from './types';
 
-const app = initializeApp({
-  apiKey: 'AIzaSyCLxH3R9QUXkPs_lJoZjCsjBxMRgGnVH9I',
-  authDomain: 'absensi-murid-268.firebaseapp.com',
-  projectId: 'absensi-murid-268',
-  storageBucket: 'absensi-murid-268.firebasestorage.app',
-  messagingSenderId: '81051053083',
-  appId: '1:81051053083:web:f6a1c4803ad7b715e1dcbe',
-  measurementId: 'G-BZTD8QK8HB'
-});
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCLxH3R9QUXkPs_lJoZjCsjBxMRgGnVH9I',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'absensi-murid-268.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'absensi-murid-268',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'absensi-murid-268.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '81051053083',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:81051053083:web:f6a1c4803ad7b715e1dcbe',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-BZTD8QK8HB'
+};
+
+const app = initializeApp(firebaseConfig);
 
 const firestore = getFirestore(app);
 let applyingCloudData = false;

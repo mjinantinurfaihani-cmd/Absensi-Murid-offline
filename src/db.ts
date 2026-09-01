@@ -5,12 +5,26 @@ class AbsensiDB extends Dexie {teachers!:Table<Teacher,string>;students!:Table<S
 export const deviceId=localStorage.getItem('deviceId')||crypto.randomUUID();localStorage.setItem('deviceId',deviceId);
 export const db=new AbsensiDB();
 db.teachers.hook('updating',(changes)=>{const value=changes as Partial<Teacher>;if(value.deleted&&!value.updatedAt)value.updatedAt=new Date().toISOString()});
-db.students.hook('updating',(changes)=>{if('deleted' in changes&&changes.deleted&&!window.confirm('Apakah anda yakin ingin menghapus siswa tersebut'))throw new Error('Penghapusan siswa dibatalkan');});
-db.teachers.hook('updating',(changes)=>{if('deleted' in changes&&changes.deleted&&!window.confirm('Apakah anda yakin ingin menghapus guru tersebut'))throw new Error('Penghapusan guru dibatalkan');});
 db.students.hook('creating',(_key,student)=>{if(!isApplyingCloudData())void publishStudent(student as Student).catch(error=>console.warn('Gagal menyimpan siswa ke Firebase',error));});
 db.students.hook('updating',(_changes,primaryKey)=>{if(!isApplyingCloudData())void db.students.get(primaryKey).then(student=>{if(student)void publishStudent(student).catch(error=>console.warn('Gagal memperbarui siswa di Firebase',error));}).catch(error=>console.warn('Gagal membaca siswa setelah perubahan',error));});
 db.students.hook('deleting',primaryKey=>{if(!isApplyingCloudData())void removePublicStudent(String(primaryKey)).catch(error=>console.warn('Gagal menghapus siswa di Firebase',error));});
 db.teachers.hook('creating',(_key,teacher)=>{if(!isApplyingCloudData())void publishTeacher(teacher as Teacher).catch(error=>console.warn('Gagal menyimpan guru ke Firebase',error));});
 db.teachers.hook('updating',(_changes,primaryKey)=>{if(!isApplyingCloudData())void db.teachers.get(primaryKey).then(teacher=>{if(teacher)void publishTeacher(teacher).catch(error=>console.warn('Gagal memperbarui guru di Firebase',error));}).catch(error=>console.warn('Gagal membaca guru setelah perubahan',error));});
 db.teachers.hook('deleting',primaryKey=>{if(!isApplyingCloudData())void removePublicTeacher(String(primaryKey)).catch(error=>console.warn('Gagal menghapus guru di Firebase',error));});
+export async function softDeleteStudent(id:string, confirmDelete = false) {
+  if (confirmDelete && !window.confirm('Apakah anda yakin ingin menghapus siswa tersebut')) {
+    throw new Error('Penghapusan siswa dibatalkan');
+  }
+  const record = await db.students.get(id);
+  if (!record) return;
+  await db.students.update(id, { deleted: 1, synced: 0, updatedAt: new Date().toISOString() });
+}
+export async function softDeleteTeacher(id:string, confirmDelete = false) {
+  if (confirmDelete && !window.confirm('Apakah anda yakin ingin menghapus guru tersebut')) {
+    throw new Error('Penghapusan guru dibatalkan');
+  }
+  const record = await db.teachers.get(id);
+  if (!record) return;
+  await db.teachers.update(id, { deleted: 1, synced: 0, updatedAt: new Date().toISOString() });
+}
 export async function seed(){if(await db.teachers.count())return;const now=new Date().toISOString();await db.teachers.bulkAdd([{id:'admin-001',nama:'Administrator',nik:'admin',password:'admin123',role:'admin',kelas:'SEMUA',deviceId,deleted:false,synced:0,updatedAt:now},{id:'guru-001',nama:'Guru Kelas 4A',nik:'1987001',password:'123456',role:'guru',kelas:'4A',deviceId,deleted:false,synced:0,updatedAt:now}]);await db.students.bulkAdd([{id:'s-001',nisn:'100001',nama:'Budi Santoso',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now},{id:'s-002',nisn:'100002',nama:'Ani Putri',kelas:'4A',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now},{id:'s-003',nisn:'100003',nama:'Deni Pratama',kelas:'4B',kontak:'',deviceId,deleted:false,synced:0,updatedAt:now}]);}

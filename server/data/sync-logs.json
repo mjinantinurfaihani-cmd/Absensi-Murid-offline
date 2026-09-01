@@ -1,0 +1,96 @@
+[
+  {
+    "timestamp": "2026-09-01T06:21:54.310Z",
+    "type": "info",
+    "message": "Sync logs cleared"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.316Z",
+    "type": "info",
+    "message": "Sync metrics reset"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.320Z",
+    "type": "info",
+    "message": "Sync request received for table: teachers",
+    "deviceId": "mobile-device-1",
+    "payloadSize": 152,
+    "contentType": "application/json"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.321Z",
+    "type": "info",
+    "message": "All validations passed for teachers",
+    "deviceId": "mobile-device-1",
+    "incomingRecordCount": 1
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.324Z",
+    "type": "info",
+    "message": "Sync completed successfully for teachers",
+    "deviceId": "mobile-device-1",
+    "incomingRecordCount": 1,
+    "mergedCount": 1,
+    "rejectedCount": 0,
+    "totalRecordsStored": 22,
+    "durationMs": 4,
+    "payloadSize": 152
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.326Z",
+    "type": "warn",
+    "message": "Conflicts detected after sync to teachers",
+    "deviceId": "mobile-device-1",
+    "conflictCount": 2
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.333Z",
+    "type": "info",
+    "message": "Sync request received for table: students",
+    "deviceId": "::1",
+    "payloadSize": 15,
+    "contentType": "text/plain"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.334Z",
+    "type": "warn",
+    "message": "Content-Type validation failed for students",
+    "deviceId": "::1",
+    "expected": "application/json",
+    "received": "text/plain"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.339Z",
+    "type": "info",
+    "message": "Sync request received for table: students",
+    "deviceId": "mobile-device-2",
+    "payloadSize": 274,
+    "contentType": "application/json"
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.341Z",
+    "type": "info",
+    "message": "All validations passed for students",
+    "deviceId": "mobile-device-2",
+    "incomingRecordCount": 2
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.343Z",
+    "type": "info",
+    "message": "Sync completed successfully for students",
+    "deviceId": "mobile-device-2",
+    "incomingRecordCount": 2,
+    "mergedCount": 2,
+    "rejectedCount": 0,
+    "totalRecordsStored": 7,
+    "durationMs": 4,
+    "payloadSize": 274
+  },
+  {
+    "timestamp": "2026-09-01T06:21:54.346Z",
+    "type": "warn",
+    "message": "Conflicts detected after sync to students",
+    "deviceId": "mobile-device-2",
+    "conflictCount": 2
+  }
+]

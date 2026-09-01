@@ -5,7 +5,11 @@ function resolvedApiBase() {
   return configured ? configured.replace(/\/$/, "") : "";
 }
 
-const API_URL = resolvedApiBase();
+function apiUrl(path: string) {
+  const base = resolvedApiBase();
+  if (!base) return "";
+  return `${base}${path}`;
+}
 
 async function checkServerHealth() {
   const api = resolvedApiBase();
@@ -27,9 +31,10 @@ export async function serverHealth() {
 }
 
 async function pushStudents() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
   const data = await db.students.toArray();
-  await fetch(`${API_URL}/api/sync/students`, {
+  await fetch(`${api}/api/sync/students`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
@@ -38,8 +43,9 @@ async function pushStudents() {
 }
 
 async function pullStudents() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
-  const response = await fetch(`${API_URL}/api/data/students`);
+  const response = await fetch(`${api}/api/data/students`);
   const data = await response.json();
 
   const byNisn = new Map<string, any>();
@@ -80,9 +86,10 @@ async function pullStudents() {
 }
 
 async function pushTeachers() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
   const data = await db.teachers.toArray();
-  await fetch(`${API_URL}/api/sync/teachers`, {
+  await fetch(`${api}/api/sync/teachers`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
@@ -91,9 +98,10 @@ async function pushTeachers() {
 }
 
 async function pushAttendance() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
   const data = await db.attendance.toArray();
-  await fetch(`${API_URL}/api/sync/attendance`, {
+  await fetch(`${api}/api/sync/attendance`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
@@ -102,8 +110,9 @@ async function pushAttendance() {
 }
 
 async function pullTeachers() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
-  const response = await fetch(`${API_URL}/api/data/teachers`);
+  const response = await fetch(`${api}/api/data/teachers`);
   const data = await response.json();
 
   const byNik = new Map<string, any>();
@@ -144,8 +153,9 @@ async function pullTeachers() {
 }
 
 async function pullAttendance() {
+  const api = resolvedApiBase();
   if (!(await checkServerHealth())) return 0;
-  const response = await fetch(`${API_URL}/api/data/attendance`);
+  const response = await fetch(`${api}/api/data/attendance`);
   const data = await response.json();
 
   const byId = new Map<string, any>();
@@ -180,7 +190,8 @@ async function pullAttendance() {
 }
 
 export async function syncAll() {
-  if (!resolvedApiBase() || !navigator.onLine || !(await checkServerHealth())) {
+  const api = resolvedApiBase();
+  if (!api || !navigator.onLine || !(await checkServerHealth())) {
     return { sent: 0 };
   }
 

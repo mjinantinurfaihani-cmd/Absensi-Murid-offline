@@ -1,0 +1,20 @@
+{
+  "successful_syncs": 2,
+  "failed_syncs": 1,
+  "total_records_synced": 3,
+  "total_conflicts_detected": 4,
+  "rate_limit_hits": 0,
+  "validation_failures": 1,
+  "avg_sync_duration_ms": 4,
+  "max_payload_size_bytes": 274,
+  "syncs_by_table": {
+    "teachers": 1,
+    "students": 2,
+    "attendance": 0
+  },
+  "failure_reasons": {
+    "students:invalid_content_type": 1,
+    "content_type_validation": 1
+  },
+  "last_updated": "2026-09-01T06:21:54.350Z"
+}
