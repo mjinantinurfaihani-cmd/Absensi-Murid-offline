@@ -17,7 +17,8 @@ service cloud.firestore {
     
     // Helper Functions
     function isValidTimestamp(ts) {
-      return ts is string && ts.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}');
+      return ts is string &&
+             ts.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*$');
     }
     
     function isValidUUID(id) {

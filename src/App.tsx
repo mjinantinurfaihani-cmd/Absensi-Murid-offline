@@ -4,6 +4,7 @@ import{useEffect,useMemo,useRef,useState,useImperativeHandle,forwardRef}from'rea
 import SqlConsole from './components/SqlConsole';
 import AttendanceDifferenceAlert, { type AttendanceDifference } from './components/AttendanceDifferenceAlert';
 import { getAttendanceSyncMonitor } from './services/attendanceSyncMonitor';
+import { requestAttendanceLocation } from './location';
 
 import{fetchTeacherByNik,loadPublicData,publishInitialData,removePublicStudent,removePublicStudentAttendanceTrace}from'./firebaseStore';
 import BackupControls from './components/BackupControls';
@@ -239,6 +240,27 @@ function Shell({user,logout,toast,showToast,closeToast}:any){const[page,setPage]
     showToast={showToast}
   />
 )} {page==='pengaturan'&&<Settings showToast={showToast} user={user}/>}<footer>@Cepi Kunaefi_2026</footer></main>{toast&&<AnimatedToast toast={toast} onClose={closeToast}/>}</>}
+function LocationAlertDialog({message,onClose,onRetry,onOpenSettings}:{message:string|null;onClose:()=>void;onRetry?:()=>void;onOpenSettings?:()=>void}){
+  if(!message)return null;
+  return <div style={{position:'fixed',inset:0,background:'rgba(15,23,42,0.68)',display:'grid',placeItems:'center',padding:'1rem',zIndex:2000}} onClick={onClose}>
+    <div role="dialog" aria-modal="true" onClick={event=>event.stopPropagation()} style={{width:'min(92vw,480px)',background:'linear-gradient(145deg,#fefce8,#fffacd)',border:'2px solid #f59e0b',borderRadius:'20px',boxShadow:'0 32px 80px rgba(217, 119, 6, 0.35)',padding:'1.4rem',display:'grid',gap:'1rem'}}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:'0.9rem'}}>
+        <div style={{width:'48px',height:'48px',minWidth:'48px',borderRadius:'50%',display:'grid',placeItems:'center',fontSize:'1.6rem',background:'linear-gradient(135deg,#fed7aa,#fecaca)',border:'2px solid #f97316',boxShadow:'0 4px 12px rgba(249, 115, 22, 0.25)'}}>⚠️</div>
+        <div>
+          <div style={{fontSize:'0.75rem',fontWeight:800,color:'#b45309',textTransform:'uppercase',letterSpacing:'0.15em',marginBottom:'0.2rem'}}>Verifikasi Lokasi</div>
+          <strong style={{fontSize:'1.15rem',color:'#1f2937',display:'block'}}>Lokasi tidak memenuhi syarat</strong>
+        </div>
+      </div>
+      <p style={{margin:0,color:'#374151',lineHeight:'1.7',fontSize:'0.95rem',background:'rgba(255,255,255,0.7)',padding:'0.8rem',borderRadius:'12px',borderLeft:'4px solid #f97316'}}>{message}</p>
+      <div style={{display:'flex',justifyContent:'flex-end',gap:'.6rem',flexWrap:'wrap',marginTop:'0.4rem'}}>
+        {onOpenSettings&&<button type="button" onClick={()=>{onOpenSettings();onClose();}} style={{padding:'0.7rem 1.2rem',minWidth:'140px',background:'#fff',color:'#d97706',border:'2px solid #d97706',borderRadius:'12px',fontWeight:600,cursor:'pointer',fontSize:'0.9rem',transition:'all 0.2s'}}>⚙️ Buka Pengaturan</button>}
+        {onRetry&&<button type="button" className="primary" onClick={()=>{onRetry();onClose();}} style={{padding:'0.7rem 1.4rem',minWidth:'130px',background:'linear-gradient(135deg,#f97316,#ea580c)',color:'#fff',border:'none',borderRadius:'12px',fontWeight:700,cursor:'pointer',fontSize:'0.9rem',boxShadow:'0 4px 12px rgba(249, 115, 22, 0.35)',transition:'all 0.2s'}}>↻ Coba Lagi</button>}
+        {!onRetry&&<button className="primary" onClick={onClose} style={{padding:'0.7rem 1.4rem',minWidth:'130px',background:'linear-gradient(135deg,#f97316,#ea580c)',color:'#fff',border:'none',borderRadius:'12px',fontWeight:700,cursor:'pointer',fontSize:'0.9rem',boxShadow:'0 4px 12px rgba(249, 115, 22, 0.35)',transition:'all 0.2s'}}>✓ Mengerti</button>}
+      </div>
+    </div>
+  </div>;
+}
+
 function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
   type PermissionStateEx='granted'|'denied'|'prompt'|'unsupported'|'insecure';
   const videoRef=useRef<HTMLVideoElement>(null);
@@ -255,6 +277,7 @@ function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
   const[status,setStatus]=useState('Periksa izin kamera untuk mulai memindai.');
   const[error,setError]=useState('');
   const[glitchActive,setGlitchActive]=useState(false);
+  const[locationAlert,setLocationAlert]=useState<string|null>(null);
 
   function stopTracks(){
     controlsRef.current?.stop?.();
@@ -334,6 +357,7 @@ function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
       if(permission!=='granted')chosen=await requestCameraPermission();
       if(!chosen)chosen=await enumerate();
       if(!chosen)throw new Error('NO_CAMERA');
+      await requestAttendanceLocation();
       stopTracks();
       const reader=new BrowserMultiFormatReader();
       controlsRef.current=await reader.decodeFromConstraints({audio:false,video:{deviceId:{exact:chosen},facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}},videoRef.current!,result=>{
@@ -355,6 +379,10 @@ function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
       }else if(e?.name==='NotReadableError'){
         setError('Kamera sedang digunakan aplikasi lain.');
       }else setError(e?.message||'Kamera gagal dibuka.');
+      const locationMessage = e?.message || '';
+      if(locationMessage.includes('Lokasi') || locationMessage.includes('radius') || locationMessage.includes('izin lokasi')){
+        setLocationAlert(locationMessage);
+      }
       setStatus('Kamera gagal dibuka.');
     }finally{setLoading(false)}
   }
@@ -403,6 +431,21 @@ function ScannerBase({onScan}:{onScan:(s:string)=>void},ref:any){
     <div ref={cameraViewRef} className="camera-view"><video ref={videoRef} autoPlay muted playsInline/><div className="scan-frame" aria-hidden="true"><span/><span/><span/><span/></div>{!scanning&&!loading&&<div className="camera-placeholder">{permission==='granted'?<>Tekan <b>Mulai Scan</b> untuk mengaktifkan kamera</>:<>Tekan <b>Izinkan Kamera</b> terlebih dahulu</>}</div>}{glitchActive&&<><div className="glitch-overlay"/><div className="glitch-box"><div className="glitch-text">✓ SUKSES</div></div></>}</div>
     <div className={`camera-status ${scanning?'active':error?'error':''}`}><i/> {status}</div>
     {error&&<div className="camera-error"><b>Kamera tidak siap.</b><span>{error}</span></div>}
+    <LocationAlertDialog
+      message={locationAlert}
+      onClose={()=>setLocationAlert(null)}
+      onRetry={async ()=>{setLocationAlert(null); await start(selectedDevice);}}
+      onOpenSettings={() => {
+        const settingsUrl = `chrome://settings/content/siteDetails?site=${encodeURIComponent(window.location.origin)}`;
+        try {
+          if (window.isSecureContext && navigator.userAgent.includes('Chrome')) {
+            window.open(settingsUrl, '_blank', 'noopener,noreferrer');
+            return;
+          }
+        } catch {}
+        window.location.reload();
+      }}
+    />
   </div>
 }
 const Scanner=forwardRef(ScannerBase);
@@ -429,6 +472,7 @@ function Scan({user,showToast}:any){
   const[manualOut,setManualOut]=useState('13:00');
   const[busy,setBusy]=useState(false);
   const[syncStatus,setSyncStatus]=useState<'idle'|'syncing'|'online'|'offline'>('idle');
+  const[locationAlert,setLocationAlert]=useState<string|null>(null);
   const last=useRef({text:'',at:0});
   const scannerRef=useRef<any>(null);
 
@@ -475,6 +519,7 @@ function Scan({user,showToast}:any){
     last.current={text,at:Date.now()};
     setBusy(true);
     try{
+      await requestAttendanceLocation();
       const data=JSON.parse(text) as {app?:string;id?:string};
       if(data.app!=='ABSENSI-SISWA'||!data.id)throw Error('QR bukan milik aplikasi');
       const student=await db.students.get(data.id);
@@ -495,6 +540,9 @@ function Scan({user,showToast}:any){
       await load();
     }catch(error:unknown){
       const message=error instanceof Error?error.message:'QR tidak valid';
+      if(message.includes('Lokasi') || message.includes('radius') || message.includes('izin lokasi')){
+        setLocationAlert(message);
+      }
       showToast('error',message);
       notify(message,true);
     }finally{setBusy(false)}
@@ -600,6 +648,31 @@ function Scan({user,showToast}:any){
     </section>
     <h1>Scan QR Absensi</h1>
     <Scanner ref={scannerRef} onScan={scan}/>
+    <LocationAlertDialog
+      message={locationAlert}
+      onClose={()=>setLocationAlert(null)}
+      onRetry={async ()=>{
+        setLocationAlert(null);
+        try {
+          await requestAttendanceLocation();
+          showToast('success', 'Lokasi valid. Anda dapat melanjutkan scan.');
+        } catch (retryError) {
+          const message = retryError instanceof Error ? retryError.message : 'Lokasi belum valid.';
+          setLocationAlert(message);
+          showToast('error', message);
+        }
+      }}
+      onOpenSettings={() => {
+        const settingsUrl = `chrome://settings/content/siteDetails?site=${encodeURIComponent(window.location.origin)}`;
+        try {
+          if (navigator.userAgent.includes('Chrome') || navigator.userAgent.includes('Edge')) {
+            window.open(settingsUrl, '_blank', 'noopener,noreferrer');
+            return;
+          }
+        } catch {}
+        window.location.reload();
+      }}
+    />
     <div className="stats">
       <article><span>Hadir</span><b>{hadir}</b></article>
       <article><span>Terlambat</span><b>{rows.length-hadir}</b></article>
